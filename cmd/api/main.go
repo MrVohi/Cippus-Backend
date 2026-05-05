@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -12,10 +13,16 @@ import (
 func main() {
 	router := gin.Default()
 	err := godotenv.Load()
-  	if err != nil {
-    	log.Fatal("Error loading .env file")
-  	}
+	if err != nil {
+		log.Fatal("Error while loading .env file: ", err)
+	}
 	cfg := config.Load()
 	config.InitLogger(cfg.LogLevel)
-	router.Run(cfg.Port)
+	_, err = config.Connect(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatal("Error while connecting to db: ", err)
+	} else {
+		slog.Info("Connection to database succesfull!")
+		router.Run(cfg.Port)
+	}
 }

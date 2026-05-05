@@ -1,4 +1,4 @@
-# CLAUDE.md — Backend
+# AGENT.md — Backend
 
 This file provides guidance to Claude Code when working in the `Backend/` directory.
 
@@ -157,22 +157,22 @@ Conventions:
 
 | Model | Key fields | Notes |
 |-------|------------|-------|
-| `User` | `Username`, `Email`, `Password` (bcrypt), `AvatarURL`, `Role` | Role: `member \| moderator \| admin` |
-| `Post` | `AuthorID`, `Title`, `Content` (HTML/JSON), `ImageURL`, `Status` | Status: `pending_moderation \| approved \| flagged \| blocked` |
-| `Category` | `Name` | |
+| `User` | `Username`, `Email`, `PasswordHash` (bcrypt), `AvatarURL`, `Role` | Role: `user \| moderator \| admin` |
+| `Post` | `UserID`, `Title`, `Content` (HTML/JSON), `ImageURL`, `Status` | Status: `pending_moderation \| approved \| flagged \| blocked` |
+| `Category` | `Name`, `Description` | |
 | `PostCategory` | `PostID`, `CategoryID` | Junction table; no `gorm.Model` needed |
-| `Comment` | `AuthorID`, `PostID`, `Content`, `Status` | Same status enum as Post |
+| `Comment` | `UserID`, `PostID`, `Content`, `Status` | Same status enum as Post |
 | `PostLike` | `UserID`, `PostID`, `Liked bool` | UNIQUE(UserID, PostID) |
 | `CommentLike` | `UserID`, `CommentID`, `Liked bool` | UNIQUE(UserID, CommentID) |
-| `OAuthProvider` | `UserID`, `ProviderName` (`github \| google`), `ProviderUserID` | |
-| `RefreshToken` | `UserID`, `TokenString`, `ExpiresAt` | |
-| `PasswordResetToken` | `UserID`, `TokenString`, `ExpiresAt`, `Used bool` | |
-| `Notification` | `UserID`, `Type`, `Title`, `Content`, `IsRead bool` | Types below |
-| `Message` | `SenderID`, `ReceiverID`, `Content`, `IsRead bool` | |
-| `Report` | `ReporterID`, `ContentType` (`post \| comment`), `ContentID`, `Reason`, `Status` | Status: `pending \| resolved \| dismissed` |
+| `OAuthProvider` | `UserID`, `Provider` (`github \| google`), `ProviderUserID` | |
+| `RefreshToken` | `UserID`, `TokenHash`, `ExpiresAt` | |
+| `PasswordResetToken` | `UserID`, `TokenHash`, `ExpiresAt`, `UsedAt *time.Time` | |
+| `Notification` | `RecipientID`, `ActorID`, `Type`, `EntityType`, `EntityID uint`, `ReadAt *time.Time` | Types: `reply \| like \| mention \| dm \| post_flagged \| post_approved` |
+| `Message` | `SenderID`, `ReceiverID`, `Content`, `ReadAt *time.Time` | |
+| `Report` | `ReporterID`, `ContentType` (`post \| comment`), `ContentID uint` (not FK), `Reason`, `Status` | Status: `pending \| resolved \| dismissed` |
 | `PushSubscription` | `UserID`, `Endpoint`, `P256dhKey`, `AuthKey` | One per browser session per user |
 
-**Notification types:** `new_comment | new_like | new_reply | new_dm | post_flagged | post_approved`
+**Notification types:** `reply | like | mention | dm | post_flagged | post_approved`
 
 ## RabbitMQ queues
 
@@ -272,7 +272,8 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
 # Database
-DATABASE_URL=postgres://user:pass@postgres:5432/cippus
+# Docker container hostname: postgres | local dev (outside Docker): localhost
+DATABASE_URL=postgres://cippus:yourpassword@localhost:5432/cippus-db
 
 # RabbitMQ
 RABBITMQ_URL=amqp://user:pass@rabbitmq:5672/
@@ -332,7 +333,7 @@ Use `log/slog` (Go stdlib ≥1.21). JSON handler in production, text handler in 
 
 ## Go version
 
-Minimum: **Go 1.24** (latest stable). Required for `log/slog` stdlib, updated `net/http` patterns, and general toolchain compatibility. Pin the version in `go.mod`.
+Minimum: **Go 1.25** (current `go.mod`). Required for `log/slog` stdlib, updated `net/http` patterns, and general toolchain compatibility. Pin the version in `go.mod`.
 
 ## Go conventions
 

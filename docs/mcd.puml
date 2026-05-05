@@ -1,0 +1,177 @@
+@startuml Cippus MCD
+
+skinparam linetype ortho
+skinparam roundcorner 5
+skinparam classBackgroundColor #1e1e2e
+skinparam classBorderColor #6c7086
+skinparam classArrowColor #cdd6f4
+skinparam classFontColor #cdd6f4
+skinparam classAttributeFontColor #a6adc8
+
+entity "Users" as users {
+  * id : uint PK
+  --
+  * username : varchar UNIQUE
+  * email : varchar UNIQUE
+  * password_hash : varchar
+    avatar_url : varchar
+  * role : enum (user / moderator / admin)
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "Posts" as posts {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * title : varchar
+  * content : text (HTML/JSON — Tiptap)
+    image_url : varchar
+  * moderation_status : enum (pending_moderation / approved / flagged / blocked)
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "Categories" as categories {
+  * id : uint PK
+  --
+  * name : varchar UNIQUE
+    description : text
+  * created_at : timestamp
+}
+
+entity "PostCategories" as post_categories {
+  * post_id : uint FK
+  * category_id : uint FK
+  --
+  PK (post_id, category_id)
+}
+
+entity "Comments" as comments {
+  * id : uint PK
+  --
+  * post_id : uint FK
+  * user_id : uint FK
+  * content : text
+  * moderation_status : enum (pending_moderation / approved / flagged / blocked)
+  * created_at : timestamp
+  * updated_at : timestamp
+}
+
+entity "PostLikes" as post_likes {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * post_id : uint FK
+  * liked : boolean
+  * created_at : timestamp
+  --
+  UNIQUE (user_id, post_id)
+}
+
+entity "CommentLikes" as comment_likes {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * comment_id : uint FK
+  * liked : boolean
+  * created_at : timestamp
+  --
+  UNIQUE (user_id, comment_id)
+}
+
+entity "OAuthProviders" as oauth_providers {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * provider : enum (github / google)
+  * provider_user_id : varchar
+  * created_at : timestamp
+}
+
+entity "RefreshTokens" as refresh_tokens {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * token_hash : varchar
+  * expires_at : timestamp
+  * created_at : timestamp
+}
+
+entity "PasswordResetTokens" as password_reset_tokens {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * token_hash : varchar
+  * expires_at : timestamp
+    used_at : timestamp
+  * created_at : timestamp
+}
+
+entity "Notifications" as notifications {
+  * id : uint PK
+  --
+  * recipient_id : uint FK
+  * actor_id : uint FK
+  * type : enum (reply / like / mention / dm / post_flagged / post_approved)
+  * entity_type : enum (post / comment)
+  * entity_id : uint
+    read_at : timestamp
+  * created_at : timestamp
+}
+
+entity "Messages" as messages {
+  * id : uint PK
+  --
+  * sender_id : uint FK
+  * receiver_id : uint FK
+  * content : text
+    read_at : timestamp
+  * created_at : timestamp
+}
+
+entity "Reports" as reports {
+  * id : uint PK
+  --
+  * reporter_id : uint FK
+  * content_type : enum (post / comment)
+  * content_id : uint
+  * reason : text
+  * status : enum (pending / resolved / dismissed)
+  * created_at : timestamp
+}
+
+entity "PushSubscriptions" as push_subscriptions {
+  * id : uint PK
+  --
+  * user_id : uint FK
+  * endpoint : text
+  * p256dh_key : varchar
+  * auth_key : varchar
+  * created_at : timestamp
+}
+
+' Relationships
+users ||--o{ posts : "writes"
+users ||--o{ comments : "writes"
+users ||--o{ post_likes : "reacts"
+users ||--o{ comment_likes : "reacts"
+users ||--o{ oauth_providers : "authenticates via"
+users ||--o{ refresh_tokens : "holds"
+users ||--o{ password_reset_tokens : "requests"
+users ||--o{ notifications : "receives (recipient)"
+users ||--o{ notifications : "triggers (actor)"
+users ||--o{ messages : "sends"
+users ||--o{ messages : "receives"
+users ||--o{ reports : "files"
+users ||--o{ push_subscriptions : "subscribes via"
+
+posts ||--o{ comments : "has"
+posts ||--o{ post_likes : "receives"
+posts ||--o{ post_categories : "tagged with"
+
+categories ||--o{ post_categories : "groups"
+
+comments ||--o{ comment_likes : "receives"
+
+@enduml
