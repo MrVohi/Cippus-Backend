@@ -12,6 +12,11 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type AuthHandler struct {
 	service *services.AuthService
 }
@@ -45,4 +50,35 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		true,
 	)
 	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": result.User})
+}
+
+func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
+	req := LoginRequest{}
+	err := ctx.ShouldBindJSON(&req)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "Invalid Request"})
+		return
+	}
+
+	result, err := h.service.Login(req.Email, req.Password)
+	if err != nil {
+		if err.Error() == "invalid credentials" {
+			ctx.JSON(401, gin.H{"error": "Invalid credentials!"})
+			return
+		}
+		ctx.JSON(500, gin.H{"error": "Cannot login user for the moment."})
+		return
+	}
+
+	ctx.SetCookie(
+		"refresh_token",
+		string(result.RefreshToken),
+		7*24*3600,
+		"/",
+		"",
+		true,
+		true,
+	)
+	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": result.User})
+
 }
