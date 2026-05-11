@@ -15,7 +15,7 @@ type AuthService struct {
 
 type AuthResult struct {
 	AccessToken  string
-	RefreshToken []byte
+	RefreshToken string
 	User         models.User
 }
 
@@ -48,7 +48,7 @@ func (s *AuthService) Register(email string, username string, password string) (
 	if err != nil {
 		return AuthResult{}, fmt.Errorf("cannot generate access token")
 	}
-	refreshToken, tokenHash, err := GenerateRefreshToken()
+	refreshToken, tokenHash, err := GenerateRefreshToken(user.ID, s.secret)
 	if err != nil {
 		return AuthResult{}, fmt.Errorf("cannot generate refresh token")
 	}
@@ -77,7 +77,7 @@ func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	if err != nil {
 		return AuthResult{}, fmt.Errorf("cannot generate access token")
 	}
-	refreshToken, tokenHash, err := GenerateRefreshToken()
+	refreshToken, tokenHash, err := GenerateRefreshToken(row.ID, s.secret)
 	if err != nil {
 		return AuthResult{}, fmt.Errorf("cannot generate refresh token")
 	}
@@ -87,4 +87,42 @@ func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	}
 
 	return AuthResult{accessToken, refreshToken, row}, nil
+}
+
+func (s *AuthService) Refresh(token string) (string, string, error){
+	userID, err := ParseRefreshToken(token, s.secret)
+	if err != nil {
+		return "", "", fmt.Errorf("Cannot find userID")
+	}
+
+	user := models.User{}
+	result := s.db.First(&user, userID)
+	if result.Error != nil {
+		return "", "", fmt.Errorf("Cannot find User")
+	}
+
+	newRefreshToken, _, err := RotateRefreshToken(s.db, userID, []byte(token), s.secret)
+	if err != nil {
+		return "", "", fmt.Errorf("Cannot rotate refresh token")
+	}
+
+	newAccessToken, err := GenerateAccessToken(userID, user.Role, s.secret)
+	if err != nil {
+		return "", "", fmt.Errorf("Cannot generate new access token")
+	}
+
+	return newRefreshToken, newAccessToken, nil
+}
+
+func (s *AuthService) Logout(userID uint) error{
+	result, err := FindRefreshToken(s.db, userID)
+	if err != nil {
+		return fmt.Errorf("Cannot find refresh token for Logout")
+	}
+	err = DeleteRefreshToken(s.db, result.ID)
+	if err != nil {
+		return fmt.Errorf("Cannot delete refresh token for Logout")
+	}
+
+	return nil
 }

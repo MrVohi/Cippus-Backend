@@ -2,28 +2,27 @@ package services
 
 import (
 	"cippus-backend/internal/models"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func GenerateRefreshToken() ([]byte, []byte, error) {
-	raw := make([]byte, 32)
-	_, err := rand.Read(raw)
+func GenerateRefreshToken(userID uint, secret string) (string, []byte, error) {
+	claims := jwt.MapClaims{
+		"userID": userID,
+		"exp":    time.Now().AddDate(0, 0, 7).Unix(),
+	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to generate 32 random bytes: %w", err)
+		return "", nil, err
 	}
 
-	token := make([]byte, hex.EncodedLen(len(raw)))
-	hex.Encode(token, raw)
-
-	hash, err := bcrypt.GenerateFromPassword(token, bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to generate hash: %w", err)
+		return "", nil, fmt.Errorf("Unable to generate hash: %w", err)
 	}
 
 	return token, hash, nil
@@ -55,32 +54,46 @@ func DeleteRefreshToken(db *gorm.DB, id uint) error {
 	return result.Error
 }
 
-func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte) ([]byte, []byte, error) {
+func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte, secret string) (string, []byte, error) {
 	rt, err := FindRefreshToken(db, userID)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	result := bcrypt.CompareHashAndPassword([]byte(rt.TokenHash), incoming)
 
 	if result != nil {
-		return nil, nil, fmt.Errorf("Refresh token for User %d does not match database! %w", userID, result)
+		return "", nil, fmt.Errorf("Refresh token for User %d does not match database! %w", userID, result)
 	}
 	err = DeleteRefreshToken(db, rt.ID)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	newPlain, newHash, err := GenerateRefreshToken()
+	newPlain, newHash, err := GenerateRefreshToken(userID, secret)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	err = StoreRefreshToken(db, userID, newHash)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	return newPlain, newHash, nil
 
+}
+
+func ParseRefreshToken(token string, secret string) (uint, error) {
+	claims, err := ValidateAccessToken(token, secret)
+	if err != nil {
+		return 0,  fmt.Errorf("Invalid access token")
+	}
+
+	raw := claims["userID"]
+	userID, ok := raw.(float64)
+	if !ok {
+		return 0, fmt.Errorf("invalid userID claim")
+	}
+	return uint(userID), nil
 }
