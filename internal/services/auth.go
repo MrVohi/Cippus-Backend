@@ -2,22 +2,15 @@ package services
 
 import (
 	"cippus-backend/internal/models"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"time"
 
+	"github.com/resend/resend-go/v2"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
-
-type AuthService struct {
-	db     *gorm.DB
-	secret string
-}
-
-type AuthResult struct {
-	AccessToken  string
-	RefreshToken string
-	User         models.User
-}
 
 func (s *AuthService) Register(email string, username string, password string) (AuthResult, error) {
 	row := models.User{}
@@ -67,7 +60,7 @@ func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 		return AuthResult{}, fmt.Errorf("invalid credentials")
 	} else if result.Error != nil {
 		return AuthResult{}, fmt.Errorf("error with db")
-	} 
+	}
 
 	if bcrypt.CompareHashAndPassword([]byte(row.PasswordHash), []byte(password)) != nil {
 		return AuthResult{}, fmt.Errorf("invalid credentials")
@@ -89,7 +82,7 @@ func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	return AuthResult{accessToken, refreshToken, row}, nil
 }
 
-func (s *AuthService) Refresh(token string) (string, string, error){
+func (s *AuthService) Refresh(token string) (string, string, error) {
 	userID, err := ParseRefreshToken(token, s.secret)
 	if err != nil {
 		return "", "", fmt.Errorf("Cannot find userID")
@@ -114,7 +107,7 @@ func (s *AuthService) Refresh(token string) (string, string, error){
 	return newRefreshToken, newAccessToken, nil
 }
 
-func (s *AuthService) Logout(userID uint) error{
+func (s *AuthService) Logout(userID uint) error {
 	result, err := FindRefreshToken(s.db, userID)
 	if err != nil {
 		return fmt.Errorf("Cannot find refresh token for Logout")
@@ -124,5 +117,65 @@ func (s *AuthService) Logout(userID uint) error{
 		return fmt.Errorf("Cannot delete refresh token for Logout")
 	}
 
+	return nil
+}
+
+func (s *AuthService) PasswordResetRequest(email string) {
+	user := models.User{}
+	result := s.db.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		return
+	}
+
+	raw := make([]byte, 32)
+	rand.Read(raw)
+	token := hex.EncodeToString(raw)
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+
+	pst := models.PasswordResetToken{
+		UserID:    user.ID,
+		User:      user,
+		TokenHash: string(hash),
+		ExpiresAt: time.Now().Add(time.Hour),
+	}
+	result = s.db.Create(&pst)
+
+	client := resend.NewClient(s.resendApiKey)
+
+	params := resend.SendEmailRequest{
+		From:    "onboarding@resend.dev",
+		To:      []string{user.Email},
+		Subject: "Password reset",
+		Html:    "<p>Reset link: http://localhost:3000/auth/password-reset?token=" + token + "</p>",
+	}
+
+	client.Emails.Send(&params)
+}
+
+func (s *AuthService) PasswordResetConfirm(token string, newPassword string) error {
+	pst := models.PasswordResetToken{}
+	result := s.db.Where("used_at is NULL").Where("expires_at > ?", time.Now()).First(&pst)
+	if result.Error != nil {
+		return fmt.Errorf("Invalid or expired token")
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(pst.TokenHash), []byte(token))
+	if err != nil {
+		return fmt.Errorf("Invalid or expired password")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("Cannot generate hash for password")
+	}
+
+	s.db.Model(&models.User{}).Where("id = ?", pst.UserID).Update("password_hash", string(hash))
+
+	now := time.Now()
+	s.db.Model(&pst).Update("used_at", &now)
 	return nil
 }
