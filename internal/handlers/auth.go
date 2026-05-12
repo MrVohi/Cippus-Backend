@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"cippus-backend/internal/services"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -140,4 +142,8 @@ func (h *AuthHandler) PasswordResetConfirmHandler(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(200, gin.H{})
+}
+
+func NewAuthHandler(service *services.AuthService) *AuthHandler {
+	return &AuthHandler{service: service}
 }

@@ -179,3 +179,7 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 	s.db.Model(&pst).Update("used_at", &now)
 	return nil
 }
+
+func NewAuthService(db *gorm.DB, secret, resendApiKey, recaptchaSecret string) *AuthService {
+	return &AuthService{db: db, secret: secret, resendApiKey: resendApiKey, recaptchaSecret: recaptchaSecret}
+}
