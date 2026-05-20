@@ -81,7 +81,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		return
 	}
 
-	refresh, access, err := h.service.Refresh(token)
+	refresh, access, user, err := h.service.Refresh(token)
 	if err != nil {
 		ctx.JSON(401, gin.H{"error": "Cannot refresh status for the moment."})
 		return
@@ -96,7 +96,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(200, gin.H{"accessToken": access})
+	ctx.JSON(200, gin.H{"user": user, "accessToken": access})
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {

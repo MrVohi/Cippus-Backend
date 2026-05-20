@@ -28,6 +28,8 @@ func GenerateRefreshToken(userID uint, secret string) (string, []byte, error) {
 }
 
 func StoreRefreshToken(db *gorm.DB, userID uint, hash []byte) error {
+	db.Where("user_id = ?", userID).Delete(&models.RefreshToken{})
+
 	pk := db.Create(&models.RefreshToken{
 		UserID:    userID,
 		TokenHash: hex.EncodeToString(hash),

@@ -3,6 +3,7 @@ package services
 import (
 	"cippus-backend/internal/models"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -82,29 +83,29 @@ func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	return AuthResult{accessToken, refreshToken, row}, nil
 }
 
-func (s *AuthService) Refresh(token string) (string, string, error) {
+func (s *AuthService) Refresh(token string) (string, string, models.User, error) {
 	userID, err := ParseRefreshToken(token, s.secret)
 	if err != nil {
-		return "", "", fmt.Errorf("Cannot find userID")
+		return "", "", models.User{}, fmt.Errorf("Cannot find userID")
 	}
 
 	user := models.User{}
 	result := s.db.First(&user, userID)
 	if result.Error != nil {
-		return "", "", fmt.Errorf("Cannot find User")
+		return "", "", models.User{}, fmt.Errorf("Cannot find User")
 	}
 
 	newRefreshToken, _, err := RotateRefreshToken(s.db, userID, []byte(token), s.secret)
 	if err != nil {
-		return "", "", fmt.Errorf("Cannot rotate refresh token")
+		return "", "", models.User{}, fmt.Errorf("Cannot rotate refresh token")
 	}
 
 	newAccessToken, err := GenerateAccessToken(userID, user.Role, s.secret)
 	if err != nil {
-		return "", "", fmt.Errorf("Cannot generate new access token")
+		return "", "", models.User{}, fmt.Errorf("Cannot generate new access token")
 	}
 
-	return newRefreshToken, newAccessToken, nil
+	return newRefreshToken, newAccessToken, user, nil
 }
 
 func (s *AuthService) Logout(userID uint) error {
@@ -131,15 +132,13 @@ func (s *AuthService) PasswordResetRequest(email string) {
 	rand.Read(raw)
 	token := hex.EncodeToString(raw)
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
-	if err != nil {
-		return
-	}
+	hash := sha256.Sum256([]byte(token))
+	hashHex := hex.EncodeToString(hash[:])
 
 	pst := models.PasswordResetToken{
 		UserID:    user.ID,
 		User:      user,
-		TokenHash: string(hash),
+		TokenHash: string(hashHex),
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 	result = s.db.Create(&pst)
@@ -157,15 +156,26 @@ func (s *AuthService) PasswordResetRequest(email string) {
 }
 
 func (s *AuthService) PasswordResetConfirm(token string, newPassword string) error {
-	pst := models.PasswordResetToken{}
-	result := s.db.Where("used_at is NULL").Where("expires_at > ?", time.Now()).First(&pst)
+	var tokens []models.PasswordResetToken
+	result := s.db.Where("used_at is NULL").Where("expires_at > ?", time.Now()).Find(&tokens)
 	if result.Error != nil {
 		return fmt.Errorf("Invalid or expired token")
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(pst.TokenHash), []byte(token))
-	if err != nil {
-		return fmt.Errorf("Invalid or expired password")
+	incomingHash := sha256.Sum256([]byte(token))
+	incomingHashHex := hex.EncodeToString(incomingHash[:])
+
+	var found *models.PasswordResetToken
+
+	for _, pst := range tokens {
+		if pst.TokenHash == incomingHashHex {
+			found = &pst
+			break
+		}
+	}
+
+	if found == nil {
+		return fmt.Errorf("invalid or expired token")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
@@ -173,10 +183,10 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 		return fmt.Errorf("Cannot generate hash for password")
 	}
 
-	s.db.Model(&models.User{}).Where("id = ?", pst.UserID).Update("password_hash", string(hash))
+	s.db.Model(&models.User{}).Where("id = ?", found.UserID).Update("password_hash", string(hash))
 
 	now := time.Now()
-	s.db.Model(&pst).Update("used_at", &now)
+	s.db.Model(found).Update("used_at", &now)
 	return nil
 }
 
