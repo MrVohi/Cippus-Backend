@@ -2,11 +2,13 @@ package services
 
 import (
 	"cippus-backend/internal/models"
+	"encoding/hex"
 	"fmt"
 	"time"
 
+	"crypto/sha256"
+
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -20,18 +22,15 @@ func GenerateRefreshToken(userID uint, secret string) (string, []byte, error) {
 		return "", nil, err
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(token), bcrypt.DefaultCost)
-	if err != nil {
-		return "", nil, fmt.Errorf("Unable to generate hash: %w", err)
-	}
+	hash := sha256.Sum256([]byte(token))
 
-	return token, hash, nil
+	return token, hash[:], nil
 }
 
 func StoreRefreshToken(db *gorm.DB, userID uint, hash []byte) error {
 	pk := db.Create(&models.RefreshToken{
 		UserID:    userID,
-		TokenHash: string(hash),
+		TokenHash: hex.EncodeToString(hash),
 		ExpiresAt: time.Now().AddDate(0, 0, 7),
 	})
 
@@ -60,10 +59,10 @@ func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte, secret string
 		return "", nil, err
 	}
 
-	result := bcrypt.CompareHashAndPassword([]byte(rt.TokenHash), incoming)
+	hash := sha256.Sum256([]byte(incoming))
 
-	if result != nil {
-		return "", nil, fmt.Errorf("Refresh token for User %d does not match database! %w", userID, result)
+	if rt.TokenHash != hex.EncodeToString(hash[:]) {
+		return "", nil, fmt.Errorf("Refresh token for User %d does not match database!", userID)
 	}
 	err = DeleteRefreshToken(db, rt.ID)
 	if err != nil {
@@ -87,7 +86,7 @@ func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte, secret string
 func ParseRefreshToken(token string, secret string) (uint, error) {
 	claims, err := ValidateAccessToken(token, secret)
 	if err != nil {
-		return 0,  fmt.Errorf("Invalid access token")
+		return 0, fmt.Errorf("Invalid access token")
 	}
 
 	raw := claims["userID"]

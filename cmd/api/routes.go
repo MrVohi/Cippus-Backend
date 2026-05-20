@@ -5,6 +5,7 @@ import (
 	"cippus-backend/internal/handlers"
 	"cippus-backend/internal/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +28,15 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, cfg 
 }
 
 func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, cfg *config.Config) {
+	corsCfg := cors.DefaultConfig()
+	corsCfg.AllowOrigins = []string{"http://localhost:3000"}
+	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	corsCfg.AllowCredentials = true
+	
+	corsMw := cors.New(corsCfg)
+	router.Use(corsMw)
+
 	api := router.Group("/api/v1")
 
 	authRoutes(api, authHandler)
