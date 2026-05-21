@@ -2,12 +2,13 @@ package main
 
 import (
 	"log"
-	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
 	"cippus-backend/config"
+	"cippus-backend/internal/handlers"
+	"cippus-backend/internal/services"
 )
 
 func main() {
@@ -18,11 +19,20 @@ func main() {
 	}
 	cfg := config.Load()
 	config.InitLogger(cfg.LogLevel)
-	_, err = config.Connect(cfg.DatabaseURL)
+	db, err := config.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatal("Error while connecting to db: ", err)
-	} else {
-		slog.Info("Connection to database succesfull!")
-		router.Run(cfg.Port)
+	}
+
+	authService := services.NewAuthService(db, cfg.JWTSecret, cfg.ResendApiKey, cfg.RecaptchaSecret)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	userService := services.NewUserService(db)
+	userHandler := handlers.NewUserHandler(userService)
+
+	setupRoutes(router, authHandler, userHandler, &cfg)
+
+	if err := router.Run(cfg.Port); err != nil {
+		log.Fatal("Server failed to start: ", err)
 	}
 }
