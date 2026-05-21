@@ -3,9 +3,9 @@ package handlers
 import "cippus-backend/internal/services"
 
 type RegisterRequest struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Email        string `json:"email"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
 	CaptchaToken string `json:"captcha"`
 }
 
@@ -25,4 +25,9 @@ type PasswordResetConfirmRequest struct {
 
 type AuthHandler struct {
 	service *services.AuthService
+}
+
+type PatchMeRequest struct {
+	Username *string `json:"username"`
+	Bio      *string `json:"bio"`
 }

@@ -20,26 +20,27 @@ func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 	}
 }
 
-func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, cfg *config.Config) {
+func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
 	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
 		private.POST("/auth/logout", authHandler.LogoutHandler)
+		private.PATCH("/users/me", userHandler.PatchMe)
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{"http://localhost:3000"}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	corsCfg.AllowCredentials = true
-	
+
 	corsMw := cors.New(corsCfg)
 	router.Use(corsMw)
 
 	api := router.Group("/api/v1")
 
 	authRoutes(api, authHandler)
-	privateRoutes(api, authHandler, cfg)
-	
+	privateRoutes(api, authHandler, userHandler, cfg)
+
 }

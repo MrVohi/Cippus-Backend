@@ -27,7 +27,10 @@ func main() {
 	authService := services.NewAuthService(db, cfg.JWTSecret, cfg.ResendApiKey, cfg.RecaptchaSecret)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	setupRoutes(router, authHandler, &cfg)
+	userService := services.NewUserService(db)
+	userHandler := handlers.NewUserHandler(userService)
+
+	setupRoutes(router, authHandler, userHandler, &cfg)
 
 	if err := router.Run(cfg.Port); err != nil {
 		log.Fatal("Server failed to start: ", err)
