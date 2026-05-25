@@ -36,13 +36,16 @@ func main() {
 	categoryService := services.NewCategoryService(db)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
 
+	projectService := services.NewProjectService(db)
+	projectHandler := handlers.NewProjectHandler(projectService)
+
 	minioService, err := services.NewMinioService(cfg.StorageEndpoint, cfg.StorageAccessKey, cfg.StorageSecretKey, cfg.StorageBucket)
 	if err != nil {
 		log.Fatal(err)
 	}
 	minioHandler := handlers.NewMinioHandler(minioService, postService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, &cfg)
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, &cfg)
 
 	if err := router.Run(cfg.Port); err != nil {
 		log.Fatal("Server failed to start: ", err)
