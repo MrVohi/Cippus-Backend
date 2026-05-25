@@ -11,4 +11,5 @@ type Post struct {
 	ImageURL         string
 	Stuck            bool
 	ModerationStatus ModerationStatus
+	Categories       []Category `gorm:"many2many:post_categories;"`
 }

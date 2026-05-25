@@ -9,7 +9,7 @@ import (
 
 func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 	row := []models.Post{}
-	query := s.db
+	query := s.db.Preload("Author").Preload("Categories")
 	if filters.CategoryID != nil {
 		query = query.Joins("JOIN post_categories ON post_categories.post_id = posts.id AND post_categories.category_id = ?", *filters.CategoryID)
 	}
@@ -21,6 +21,7 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 	if filters.Stuck != nil {
 		query = query.Where("stuck = ?", *filters.Stuck)
 	}
+
 	result := query.Find(&row)
 	if result.Error != nil {
 		return nil, result.Error
@@ -31,7 +32,7 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 
 func (s *PostService) GetPostsById(id uint) (models.Post, error) {
 	row := models.Post{}
-	result := s.db.Where("id = ?", id).First(&row)
+	result := s.db.Preload("Author").Preload("Categories").Where("id = ?", id).First(&row)
 	if result.Error == gorm.ErrRecordNotFound {
 		return models.Post{}, fmt.Errorf("post not found")
 	} else if result.Error != nil {
@@ -104,6 +105,20 @@ func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (model
 	result = s.db.Save(&post)
 	if result.Error != nil {
 		return models.Post{}, fmt.Errorf("cannot update post")
+	}
+
+	result = s.db.Where("post_id = ?", post.ID).Delete(&models.PostCategory{})
+	if result.Error != nil {
+		return models.Post{}, fmt.Errorf("cannot update post categories")
+	}
+	if input.CategoryIDs != nil {
+		for _, category := range input.CategoryIDs {
+			result := s.db.Save(&models.PostCategory{PostID: post.ID, CategoryID: category})
+			if result.Error != nil {
+				return post, result.Error
+			}
+		}
+
 	}
 
 	return post, nil
