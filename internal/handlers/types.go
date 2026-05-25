@@ -31,3 +31,12 @@ type PatchMeRequest struct {
 	Username *string `json:"username"`
 	Bio      *string `json:"bio"`
 }
+
+type PostHandler struct {
+	service *services.PostService
+}
+
+type MinioHandler struct {
+	service *services.MinioService
+	postServices *services.PostService
+}
