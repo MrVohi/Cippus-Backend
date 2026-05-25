@@ -86,7 +86,7 @@ func (h *PostHandler) GetPostsByIdHandler(ctx *gin.Context) {
 }
 
 func (h *PostHandler) CreatePostHandler(ctx *gin.Context) {
-	req := services.CreatePostInput{}
+	req := services.PostInput{}
 	err := ctx.ShouldBindJSON(&req)
 
 	if err != nil {
@@ -119,7 +119,7 @@ func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
 		return
 	}
 
-	req := services.CreatePostInput{}
+	req := services.PostInput{}
 	err = ctx.ShouldBindJSON(&req)
 
 	if err != nil {

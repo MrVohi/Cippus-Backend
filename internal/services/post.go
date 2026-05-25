@@ -41,7 +41,7 @@ func (s *PostService) GetPostsById(id uint) (models.Post, error) {
 	return row, nil
 }
 
-func (s *PostService) CreatePost(authorID uint, input CreatePostInput) (models.Post, error) {
+func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, error) {
 	post := models.Post{
 		UserId:           authorID,
 		Title:            input.Title,
@@ -72,7 +72,7 @@ func (s *PostService) CreatePost(authorID uint, input CreatePostInput) (models.P
 	return post, nil
 }
 
-func (s *PostService) UpdatePost(id uint, authorID uint, input CreatePostInput) (models.Post, error) {
+func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (models.Post, error) {
 	post := models.Post{}
 
 	result := s.db.Model(&models.Post{}).Where("id = ?", id).First(&post)

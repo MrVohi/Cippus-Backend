@@ -28,7 +28,7 @@ type PostService struct {
 	db *gorm.DB
 }
 
-type CreatePostInput struct {
+type PostInput struct {
 	Title       string `json:"title"`
 	Content     string `json:"content"`
 	ImageURL    string `json:"imageUrl"`
@@ -46,4 +46,13 @@ type MinioService struct {
 	Client *minio.Client
 	Bucket string
 	Endpoint string
+}
+
+type CategoryService struct {
+	db *gorm.DB
+}
+
+type CategoryInput struct {
+	Name        string
+	Description string
 }

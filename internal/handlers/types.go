@@ -40,3 +40,7 @@ type MinioHandler struct {
 	service *services.MinioService
 	postServices *services.PostService
 }
+
+type CategoryHandler struct {
+	service *services.CategoryService
+}
