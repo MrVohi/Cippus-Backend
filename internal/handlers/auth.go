@@ -39,7 +39,6 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(500, gin.H{"error": "Cannot register user for the moment."})
-	return
 
 	ctx.SetCookie(
 		"refresh_token",
