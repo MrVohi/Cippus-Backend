@@ -9,5 +9,6 @@ type Post struct {
 	Title            string
 	Content          string `gorm:"type:text"`
 	ImageURL         string
+	Stuck            bool
 	ModerationStatus ModerationStatus
 }
