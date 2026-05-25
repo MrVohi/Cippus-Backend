@@ -73,8 +73,11 @@ func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, e
 	return post, nil
 }
 
-func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (models.Post, error) {
+func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input PostInput) (models.Post, error) {
 	post := models.Post{}
+	if userRole == "" {
+		return models.Post{}, fmt.Errorf("Cannot find user's role")
+	}
 
 	result := s.db.Model(&models.Post{}).Where("id = ?", id).First(&post)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -83,7 +86,7 @@ func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (model
 		return models.Post{}, fmt.Errorf("error with db")
 	}
 
-	if post.UserId != authorID {
+	if post.UserId != authorID && userRole == "user" {
 		return models.Post{}, fmt.Errorf("forbidden")
 	}
 
@@ -124,8 +127,11 @@ func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (model
 	return post, nil
 }
 
-func (s *PostService) DeletePost(id uint, authorID uint) error {
+func (s *PostService) DeletePost(id uint, authorID uint, userRole string) error {
 	post := models.Post{}
+	if userRole == "" {
+		return fmt.Errorf("Cannot find user's role")
+	}
 
 	result := s.db.Model(&models.Post{}).Where("id = ?", id).First(&post)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -134,7 +140,7 @@ func (s *PostService) DeletePost(id uint, authorID uint) error {
 		return fmt.Errorf("error with db")
 	}
 
-	if post.UserId != authorID {
+	if post.UserId != authorID && userRole == "user" {
 		return fmt.Errorf("forbidden")
 	}
 

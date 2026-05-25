@@ -128,7 +128,7 @@ func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
-	post, err := h.service.UpdatePost(uint(id), userID, req)
+	post, err := h.service.UpdatePost(uint(id), userID, ctx.GetString("userRole"), req)
 
 	if err != nil {
 		if err.Error() == "post not found" {
@@ -162,7 +162,7 @@ func (h *PostHandler) DeletePostHandler(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
-	err = h.service.DeletePost(uint(id), userID)
+	err = h.service.DeletePost(uint(id), userID, ctx.GetString("userRole"))
 
 	if err != nil {
 		if err.Error() == "post not found" {
@@ -178,7 +178,7 @@ func (h *PostHandler) DeletePostHandler(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(200, gin.H{})
-} 
+}
 
 func NewPostHandler(service *services.PostService) *PostHandler {
 	return &PostHandler{service: service}
