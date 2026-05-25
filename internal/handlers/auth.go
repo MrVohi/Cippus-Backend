@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strings"
+
 	"cippus-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -27,9 +29,17 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 			ctx.JSON(409, gin.H{"error": "Email already exists!"})
 			return
 		}
-		ctx.JSON(500, gin.H{"error": "Cannot register user for the moment."})
+	}
+	if strings.HasPrefix(err.Error(), "username already exists, suggestion:") {
+		suggestion := strings.TrimPrefix(err.Error(), "username already exists, suggestion: ")
+		ctx.JSON(409, gin.H{
+			"error":      "Username already exists!",
+			"suggestion": suggestion,
+		})
 		return
 	}
+	ctx.JSON(500, gin.H{"error": "Cannot register user for the moment."})
+	return
 
 	ctx.SetCookie(
 		"refresh_token",
