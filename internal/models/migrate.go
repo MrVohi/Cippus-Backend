@@ -15,4 +15,6 @@ var Models = []interface{}{
 	&RefreshToken{},
 	&Report{},
 	&User{},
+	&Project{},
+	&ProjectPost{},
 }

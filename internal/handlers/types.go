@@ -37,10 +37,14 @@ type PostHandler struct {
 }
 
 type MinioHandler struct {
-	service *services.MinioService
+	service      *services.MinioService
 	postServices *services.PostService
 }
 
 type CategoryHandler struct {
 	service *services.CategoryService
+}
+
+type ProjectHandler struct {
+	service *services.ProjectService
 }

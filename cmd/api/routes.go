@@ -29,7 +29,7 @@ func postRoutes(api *gin.RouterGroup, postHandler *handlers.PostHandler, cfg *co
 		publicPosts.GET("/:id", postHandler.GetPostsByIdHandler)
 		privatePosts.POST("/", postHandler.CreatePostHandler)
 		privatePosts.PATCH("/:id", postHandler.UpdatePostHandler)
-		privatePosts.DELETE("/:id", postHandler.DeletePostHandler)		
+		privatePosts.DELETE("/:id", postHandler.DeletePostHandler)
 	}
 }
 
@@ -52,6 +52,19 @@ func categoryRoutes(api *gin.RouterGroup, categoryHandler *handlers.CategoryHand
 	}
 }
 
+func projectRoutes(api *gin.RouterGroup, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
+	publicProjects := api.Group("/projects")
+	privateProjects := api.Group("/projects").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		api.GET("/users/:userId/projects", projectHandler.GetProjectsByUserHandler)
+		publicProjects.GET("/:id", projectHandler.GetProjectsByIdHandler)
+		privateProjects.POST("/", projectHandler.CreateProjectHandler)
+		privateProjects.PATCH("/:id", projectHandler.UpdateProjectHandler)
+		privateProjects.DELETE("/:id", projectHandler.DeleteProjectHandler)
+		privateProjects.POST("/:id/posts/:postId", projectHandler.AddPostToProjectHandler)
+		privateProjects.DELETE("/:id/posts/:postId", projectHandler.DeletePostFromProjectHandler)
+	}
+}
 
 func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
 	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
@@ -61,7 +74,7 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{"http://localhost:3000"}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -78,5 +91,6 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	postRoutes(api, postHandler, cfg)
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)
+	projectRoutes(api, projectHandler, cfg)
 
 }

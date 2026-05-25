@@ -57,3 +57,12 @@ type CategoryInput struct {
 	Name        string
 	Description string
 }
+
+type ProjectService struct {
+	db *gorm.DB
+}
+
+type ProjectInput struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
