@@ -1,11 +1,35 @@
 package handlers
 
 import (
+	"bytes"
 	"cippus-backend/internal/services"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+func validateImage(opened multipart.File) ([]byte, error) {
+	buf := make([]byte, 512)
+	opened.Read(buf)
+	contentType := http.DetectContentType(buf)
+	allowed := []string{"image/png", "image/jpeg", "image/gif"}
+	valid := false
+	for _, v := range allowed {
+		if contentType == v {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return nil, fmt.Errorf("Invalid file type")
+	}
+
+	return buf, nil
+}
 
 func (h *MinioHandler) UploadImageHandler(ctx *gin.Context) {
 	strID := ctx.Param("id")
@@ -42,16 +66,25 @@ func (h *MinioHandler) UploadImageHandler(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": "Could not find file"})
 		return
 	}
+	if file.Size > (20 * 1024 * 1024) {
+		ctx.JSON(400, gin.H{"error": "file too big"})
+		return
+	}
 
 	opened, err := file.Open()
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Could not open file"})
 		return
 	}
-
+	buf, err := validateImage(opened)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	fullReader := io.MultiReader(bytes.NewReader(buf), opened)
 	defer opened.Close()
 
-	url, err := h.service.UploadFile(opened, file.Size, file.Filename)
+	url, err := h.service.UploadFile(fullReader, file.Size, file.Filename)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Could not upload file"})
 		return
@@ -117,6 +150,6 @@ func (h *MinioHandler) DeleteImageHandler(ctx *gin.Context) {
 	ctx.JSON(200, gin.H{})
 }
 
-func NewMinioHandler (service *services.MinioService, postServices *services.PostService) *MinioHandler {
+func NewMinioHandler(service *services.MinioService, postServices *services.PostService) *MinioHandler {
 	return &MinioHandler{service: service, postServices: postServices}
 }
