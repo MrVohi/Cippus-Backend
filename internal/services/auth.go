@@ -16,6 +16,13 @@ import (
 func (s *AuthService) Register(email string, username string, password string) (AuthResult, error) {
 	row := models.User{}
 
+	usernameRow := models.User{}
+	usernameResult := s.db.Where("username = ?", username).First(&usernameRow)
+	if usernameResult.Error == nil {
+    suggestedUsername := GenerateUniqueUsername(s.db, username)
+    return AuthResult{}, fmt.Errorf("username already exists, suggestion: %s", suggestedUsername)
+	}
+
 	result := s.db.Where("email = ?", email).First(&row)
 	if result.Error == nil {
 		return AuthResult{}, fmt.Errorf("email already exists")
@@ -53,6 +60,21 @@ func (s *AuthService) Register(email string, username string, password string) (
 
 	return AuthResult{accessToken, refreshToken, user}, nil
 }
+
+func GenerateUniqueUsername(db *gorm.DB, base string) string {
+    for {
+        raw := make([]byte, 2)
+        rand.Read(raw)
+        suffix := int(raw[0])<<8|int(raw[1]) % 9000 + 1000
+        candidate := fmt.Sprintf("%s%d", base, suffix)
+        row := models.User{}
+        result := db.Where("username = ?", candidate).First(&row)
+        if result.Error == gorm.ErrRecordNotFound {
+            return candidate
+        }
+    }
+}
+
 
 func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	row := models.User{}
