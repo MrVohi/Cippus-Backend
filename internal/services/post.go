@@ -9,7 +9,7 @@ import (
 
 func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 	row := []models.Post{}
-	query := s.db
+	query := s.db.Preload("Author").Preload("Categories")
 	if filters.CategoryID != nil {
 		query = query.Joins("JOIN post_categories ON post_categories.post_id = posts.id AND post_categories.category_id = ?", *filters.CategoryID)
 	}
@@ -21,6 +21,11 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 	if filters.Stuck != nil {
 		query = query.Where("stuck = ?", *filters.Stuck)
 	}
+
+	if filters.Q != nil && *filters.Q != "" {
+		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+*filters.Q+"%", "%"+*filters.Q+"%")
+	}
+
 	result := query.Find(&row)
 	if result.Error != nil {
 		return nil, result.Error
@@ -31,7 +36,7 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 
 func (s *PostService) GetPostsById(id uint) (models.Post, error) {
 	row := models.Post{}
-	result := s.db.Where("id = ?", id).First(&row)
+	result := s.db.Preload("Author").Preload("Categories").Where("id = ?", id).First(&row)
 	if result.Error == gorm.ErrRecordNotFound {
 		return models.Post{}, fmt.Errorf("post not found")
 	} else if result.Error != nil {
@@ -72,8 +77,11 @@ func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, e
 	return post, nil
 }
 
-func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (models.Post, error) {
+func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input PostInput) (models.Post, error) {
 	post := models.Post{}
+	if userRole == "" {
+		return models.Post{}, fmt.Errorf("Cannot find user's role")
+	}
 
 	result := s.db.Model(&models.Post{}).Where("id = ?", id).First(&post)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -82,7 +90,7 @@ func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (model
 		return models.Post{}, fmt.Errorf("error with db")
 	}
 
-	if post.UserId != authorID {
+	if post.UserId != authorID && userRole == "user" {
 		return models.Post{}, fmt.Errorf("forbidden")
 	}
 
@@ -106,11 +114,28 @@ func (s *PostService) UpdatePost(id uint, authorID uint, input PostInput) (model
 		return models.Post{}, fmt.Errorf("cannot update post")
 	}
 
+	result = s.db.Where("post_id = ?", post.ID).Delete(&models.PostCategory{})
+	if result.Error != nil {
+		return models.Post{}, fmt.Errorf("cannot update post categories")
+	}
+	if input.CategoryIDs != nil {
+		for _, category := range input.CategoryIDs {
+			result := s.db.Save(&models.PostCategory{PostID: post.ID, CategoryID: category})
+			if result.Error != nil {
+				return post, result.Error
+			}
+		}
+
+	}
+
 	return post, nil
 }
 
-func (s *PostService) DeletePost(id uint, authorID uint) error {
+func (s *PostService) DeletePost(id uint, authorID uint, userRole string) error {
 	post := models.Post{}
+	if userRole == "" {
+		return fmt.Errorf("Cannot find user's role")
+	}
 
 	result := s.db.Model(&models.Post{}).Where("id = ?", id).First(&post)
 	if result.Error == gorm.ErrRecordNotFound {
@@ -119,7 +144,7 @@ func (s *PostService) DeletePost(id uint, authorID uint) error {
 		return fmt.Errorf("error with db")
 	}
 
-	if post.UserId != authorID {
+	if post.UserId != authorID && userRole == "user" {
 		return fmt.Errorf("forbidden")
 	}
 
