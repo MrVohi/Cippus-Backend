@@ -22,6 +22,10 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 		query = query.Where("stuck = ?", *filters.Stuck)
 	}
 
+	if filters.Q != nil && *filters.Q != "" {
+		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+*filters.Q+"%", "%"+*filters.Q+"%")
+	}
+
 	result := query.Find(&row)
 	if result.Error != nil {
 		return nil, result.Error

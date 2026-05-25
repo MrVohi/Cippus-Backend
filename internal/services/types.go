@@ -40,11 +40,12 @@ type GetPostsFilter struct {
 	CategoryID *uint
 	AuthorID   *uint
 	Stuck      *bool
+	Q          *string
 }
 
 type MinioService struct {
-	Client *minio.Client
-	Bucket string
+	Client   *minio.Client
+	Bucket   string
 	Endpoint string
 }
 

@@ -50,6 +50,11 @@ func (h *PostHandler) GetPostsHandler(ctx *gin.Context) {
 	filter.AuthorID = author
 	filter.Stuck = stuck
 
+	q := ctx.Query("q")
+	if q != "" {
+		filter.Q = &q
+	}
+
 	post, err := h.service.GetPosts(filter)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Cannot find post for the moment."})
