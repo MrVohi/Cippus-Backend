@@ -11,7 +11,6 @@ import (
 func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 	req := RegisterRequest{}
 	err := ctx.ShouldBindJSON(&req)
-
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return
@@ -25,20 +24,23 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 
 	result, err := h.service.Register(req.Email, req.Username, req.Password)
 	if err != nil {
-		if err.Error() == "email already exists" {
+		switch {
+		case err.Error() == "email already exists":
 			ctx.JSON(409, gin.H{"error": "Email already exists!"})
-			return
+		case strings.HasPrefix(err.Error(), "username already exists"):
+			suggestion := strings.TrimPrefix(err.Error(), "username already exists: ")
+			ctx.JSON(409, gin.H{
+				"error":      "Username already taken!",
+				"suggestion": suggestion,
+			})
+		default:
+			ctx.JSON(500, gin.H{"error": "Cannot register user for the moment."})
 		}
-	}
-	if strings.HasPrefix(err.Error(), "username already exists, suggestion:") {
-		suggestion := strings.TrimPrefix(err.Error(), "username already exists, suggestion: ")
-		ctx.JSON(409, gin.H{
-			"error":      "Username already exists!",
-			"suggestion": suggestion,
-		})
 		return
 	}
-	ctx.JSON(500, gin.H{"error": "Cannot register user for the moment."})
+
+	ctx.SetCookie("refresh_token", result.RefreshToken, 7*24*3600, "/", "", true, true)
+	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": result.User})
 
 	ctx.SetCookie(
 		"refresh_token",
