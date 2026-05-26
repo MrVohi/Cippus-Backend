@@ -39,9 +39,6 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.SetCookie("refresh_token", result.RefreshToken, 7*24*3600, "/", "", true, true)
-	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": result.User})
-
 	ctx.SetCookie(
 		"refresh_token",
 		result.RefreshToken,
@@ -135,7 +132,10 @@ func (h *AuthHandler) PasswordResetRequestHandler(ctx *gin.Context) {
 		return
 	}
 
-	h.service.PasswordResetRequest(req.Email)
+	if err := h.service.PasswordResetRequest(req.Email); err != nil {
+		ctx.JSON(500, gin.H{"error": "Cannot send password reset email."})
+		return
+	}
 	ctx.JSON(200, gin.H{})
 }
 
