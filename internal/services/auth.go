@@ -19,8 +19,8 @@ func (s *AuthService) Register(email string, username string, password string) (
 	usernameRow := models.User{}
 	usernameResult := s.db.Where("username = ?", username).First(&usernameRow)
 	if usernameResult.Error == nil {
-    suggestedUsername := GenerateUniqueUsername(s.db, username)
-    return AuthResult{}, fmt.Errorf("username already exists, suggestion: %s", suggestedUsername)
+		suggestedUsername := GenerateUniqueUsername(s.db, username)
+		return AuthResult{}, fmt.Errorf("username already exists: %s", suggestedUsername)
 	}
 
 	result := s.db.Where("email = ?", email).First(&row)
@@ -62,19 +62,24 @@ func (s *AuthService) Register(email string, username string, password string) (
 }
 
 func GenerateUniqueUsername(db *gorm.DB, base string) string {
-    for {
-        raw := make([]byte, 2)
-        rand.Read(raw)
-        suffix := int(raw[0])<<8|int(raw[1]) % 9000 + 1000
-        candidate := fmt.Sprintf("%s%d", base, suffix)
-        row := models.User{}
-        result := db.Where("username = ?", candidate).First(&row)
-        if result.Error == gorm.ErrRecordNotFound {
-            return candidate
-        }
-    }
-}
 
+	for {
+		raw := make([]byte, 3)
+		rand.Read(raw)
+
+		var candidate string
+		if raw[0]%2 == 0 {
+			suffix := (int(raw[1])<<8|int(raw[2]))%9000 + 1000
+			candidate = fmt.Sprintf("%s%d", base, suffix)
+		}
+
+		row := models.User{}
+		result := db.Where("username = ?", candidate).First(&row)
+		if result.Error == gorm.ErrRecordNotFound {
+			return candidate
+		}
+	}
+}
 
 func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	row := models.User{}
