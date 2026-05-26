@@ -64,14 +64,13 @@ func (s *AuthService) Register(email string, username string, password string) (
 func GenerateUniqueUsername(db *gorm.DB, base string) string {
 
 	for {
-		raw := make([]byte, 3)
+		raw := make([]byte, 2)
 		rand.Read(raw)
 
 		var candidate string
-		if raw[0]%2 == 0 {
-			suffix := (int(raw[1])<<8|int(raw[2]))%9000 + 1000
-			candidate = fmt.Sprintf("%s%d", base, suffix)
-		}
+
+		suffix := (int(raw[0])<<8|int(raw[1]))%9000 + 1000
+		candidate = fmt.Sprintf("%s%d", base, suffix)
 
 		row := models.User{}
 		result := db.Where("username = ?", candidate).First(&row)
@@ -148,11 +147,11 @@ func (s *AuthService) Logout(userID uint) error {
 	return nil
 }
 
-func (s *AuthService) PasswordResetRequest(email string) {
+func (s *AuthService) PasswordResetRequest(email string) (error){
 	user := models.User{}
 	result := s.db.Where("email = ?", email).First(&user)
 	if result.Error != nil {
-		return
+		return fmt.Errorf("Cannot find user")
 	}
 
 	raw := make([]byte, 32)
@@ -169,6 +168,9 @@ func (s *AuthService) PasswordResetRequest(email string) {
 		ExpiresAt: time.Now().Add(time.Hour),
 	}
 	result = s.db.Create(&pst)
+	if result.Error != nil {
+		return fmt.Errorf("Cannot create password reset token")
+	}
 
 	client := resend.NewClient(s.resendApiKey)
 
@@ -180,6 +182,7 @@ func (s *AuthService) PasswordResetRequest(email string) {
 	}
 
 	client.Emails.Send(&params)
+	return nil
 }
 
 func (s *AuthService) PasswordResetConfirm(token string, newPassword string) error {
@@ -210,10 +213,16 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 		return fmt.Errorf("Cannot generate hash for password")
 	}
 
-	s.db.Model(&models.User{}).Where("id = ?", found.UserID).Update("password_hash", string(hash))
+	result = s.db.Model(&models.User{}).Where("id = ?", found.UserID).Update("password_hash", string(hash))
+	if result.Error != nil {
+		return fmt.Errorf("Cannot update password")
+	}
 
 	now := time.Now()
-	s.db.Model(found).Update("used_at", &now)
+	result = s.db.Model(found).Update("used_at", &now)
+	if result.Error != nil {
+		return fmt.Errorf("Cannot update password")
+	}
 	return nil
 }
 
