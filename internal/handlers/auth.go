@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"strings"
 
 	"cippus-backend/internal/services"
@@ -132,7 +133,9 @@ func (h *AuthHandler) PasswordResetRequestHandler(ctx *gin.Context) {
 		return
 	}
 
-	h.service.PasswordResetRequest(req.Email)
+	if err := h.service.PasswordResetRequest(req.Email); err != nil {
+		slog.Warn("password reset request failed", "err", err)
+	}
 	ctx.JSON(200, gin.H{})
 }
 
