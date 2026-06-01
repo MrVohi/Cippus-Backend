@@ -29,11 +29,11 @@ type PostService struct {
 }
 
 type PostInput struct {
-	Title       string `json:"title"`
-	Content     string `json:"content"`
-	ImageURL    string `json:"imageUrl"`
-	CategoryIDs []uint `json:"categoryIds"`
-	Stuck       *bool  `json:"stuck"`
+	Title       string `json:"title"       binding:"required,min=3,max=200"`
+	Content     string `json:"content"     binding:"required,min=10"`
+	ImageURL    string `json:"imageUrl"    binding:"omitempty,max=2048"`
+	CategoryIDs []uint `json:"categoryIds" binding:"required,min=1"`
+	Stuck       *bool  `json:"stuck"       binding:"omitempty"`
 }
 
 type GetPostsFilter struct {
