@@ -3,24 +3,24 @@ package handlers
 import "cippus-backend/internal/services"
 
 type RegisterRequest struct {
-	Email        string `json:"email"`
-	Username     string `json:"username"`
-	Password     string `json:"password"`
-	CaptchaToken string `json:"captcha"`
+	Email        string `json:"email"        binding:"required,email,max=255"`
+	Username     string `json:"username"     binding:"required,min=2,max=30"`
+	Password     string `json:"password"     binding:"required,min=8,max=128"`
+	CaptchaToken string `json:"captcha"      binding:"required"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email"    binding:"required,email,max=255"`
+	Password string `json:"password" binding:"required,min=1,max=128"`
 }
 
 type PasswordResetRequestRequest struct {
-	Email string `json:"email"`
+	Email string `json:"email" binding:"required,email,max=255"`
 }
 
 type PasswordResetConfirmRequest struct {
-	Token       string `json:"token"`
-	NewPassword string `json:"newPassword"`
+	Token       string `json:"token"       binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required,min=8,max=128"`
 }
 
 type AuthHandler struct {
@@ -28,8 +28,8 @@ type AuthHandler struct {
 }
 
 type PatchMeRequest struct {
-	Username *string `json:"username"`
-	Bio      *string `json:"bio"`
+	Username *string `json:"username" binding:"omitempty,min=2,max=30"`
+	Bio      *string `json:"bio"      binding:"omitempty,max=500"`
 }
 
 type PostHandler struct {

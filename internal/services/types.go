@@ -54,8 +54,8 @@ type CategoryService struct {
 }
 
 type CategoryInput struct {
-	Name        string
-	Description string
+	Name        string `json:"name"        binding:"required,min=2,max=50"`
+	Description string `json:"description" binding:"omitempty,max=255"`
 }
 
 type ProjectService struct {
@@ -63,6 +63,6 @@ type ProjectService struct {
 }
 
 type ProjectInput struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string `json:"title"       binding:"required,min=3,max=100"`
+	Description string `json:"description" binding:"omitempty,max=1000"`
 }
