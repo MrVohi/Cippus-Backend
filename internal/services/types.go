@@ -31,7 +31,6 @@ type PostService struct {
 type PostInput struct {
 	Title       string `json:"title"`
 	Content     string `json:"content"`
-	ImageURL    string `json:"imageUrl"`
 	CategoryIDs []uint `json:"categoryIds"`
 	Stuck       *bool  `json:"stuck"`
 }

@@ -14,7 +14,8 @@ import (
 
 func validateImage(opened multipart.File) ([]byte, error) {
 	buf := make([]byte, 512)
-	opened.Read(buf)
+	n, _ := opened.Read(buf)
+	buf = buf[:n]
 	contentType := http.DetectContentType(buf)
 	allowed := []string{"image/png", "image/jpeg", "image/gif"}
 	valid := false
