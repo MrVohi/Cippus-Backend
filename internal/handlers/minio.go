@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"cippus-backend/internal/models"
 	"cippus-backend/internal/services"
 	"fmt"
 	"io"
@@ -47,6 +48,7 @@ func (h *MinioHandler) UploadImageHandler(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
+	userRole := ctx.GetString("userRole")
 	post, err := h.postServices.GetPostsById(uint(id))
 	if err != nil {
 		if err.Error() == "post not found" {
@@ -57,7 +59,7 @@ func (h *MinioHandler) UploadImageHandler(ctx *gin.Context) {
 		return
 	}
 
-	if post.UserId != userID {
+	if post.UserId != userID && userRole != string(models.RoleModerator) && userRole != string(models.RoleAdmin) {
 		ctx.JSON(403, gin.H{"error": "Could not find post"})
 		return
 	}
@@ -115,6 +117,7 @@ func (h *MinioHandler) DeleteImageHandler(ctx *gin.Context) {
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
+	userRole := ctx.GetString("userRole")
 
 	post, err := h.postServices.GetPostsById(uint(id))
 	if err != nil {
@@ -126,7 +129,7 @@ func (h *MinioHandler) DeleteImageHandler(ctx *gin.Context) {
 		return
 	}
 
-	if post.UserId != userID {
+	if post.UserId != userID && userRole != string(models.RoleModerator) && userRole != string(models.RoleAdmin) {
 		ctx.JSON(403, gin.H{"error": "Could not find post"})
 		return
 	}
