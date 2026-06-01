@@ -149,11 +149,11 @@ func (s *AuthService) Logout(userID uint) error {
 	return nil
 }
 
-func (s *AuthService) PasswordResetRequest(email string) (error){
+func (s *AuthService) PasswordResetRequest(email string) error {
 	user := models.User{}
 	result := s.db.Where("email = ?", email).First(&user)
 	if result.Error != nil {
-		return fmt.Errorf("Cannot find user")
+		return nil // silently do nothing — never reveal whether email is registered
 	}
 
 	raw := make([]byte, 32)
@@ -208,6 +208,8 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 	if result.Error != nil {
 		return fmt.Errorf("Cannot update password")
 	}
+
+	s.db.Where("user_id = ?", found.UserID).Delete(&models.RefreshToken{})
 
 	now := time.Now()
 	result = s.db.Model(&found).Update("used_at", &now)

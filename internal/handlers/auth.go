@@ -108,7 +108,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
-	userID := ctx.GetUint("userID")
+	userID := uint(ctx.GetFloat64("userID"))
 	if userID == 0 {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return
@@ -132,10 +132,7 @@ func (h *AuthHandler) PasswordResetRequestHandler(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.PasswordResetRequest(req.Email); err != nil {
-		ctx.JSON(500, gin.H{"error": "Cannot send password reset email."})
-		return
-	}
+	h.service.PasswordResetRequest(req.Email)
 	ctx.JSON(200, gin.H{})
 }
 
