@@ -55,19 +55,18 @@ func categoryRoutes(api *gin.RouterGroup, categoryHandler *handlers.CategoryHand
 func projectRoutes(api *gin.RouterGroup, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
 	publicProjects := api.Group("/projects")
 	privateProjects := api.Group("/projects").Use(middleware.AuthMiddleware(cfg.JWTSecret))
-	{
-		api.GET("/users/:userId/projects", projectHandler.GetProjectsByUserHandler)
-		publicProjects.GET("/:id", projectHandler.GetProjectsByIdHandler)
-		privateProjects.POST("/", projectHandler.CreateProjectHandler)
-		privateProjects.PATCH("/:id", projectHandler.UpdateProjectHandler)
-		privateProjects.DELETE("/:id", projectHandler.DeleteProjectHandler)
-		privateProjects.POST("/:id/posts/:postId", projectHandler.AddPostToProjectHandler)
-		privateProjects.DELETE("/:id/posts/:postId", projectHandler.DeletePostFromProjectHandler)
-	}
+
+	api.GET("/users/:userId/projects", projectHandler.GetProjectsByUserHandler)
+	publicProjects.GET("/:id", projectHandler.GetProjectsByIdHandler)
+	privateProjects.POST("/", projectHandler.CreateProjectHandler)
+	privateProjects.PATCH("/:id", projectHandler.UpdateProjectHandler)
+	privateProjects.DELETE("/:id", projectHandler.DeleteProjectHandler)
+	privateProjects.POST("/:id/posts/:postId", projectHandler.AddPostToProjectHandler)
+	privateProjects.DELETE("/:id/posts/:postId", projectHandler.DeletePostFromProjectHandler)
 }
 
 func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
-	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	private := api.Group("").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
 		private.POST("/auth/logout", authHandler.LogoutHandler)
 		private.PATCH("/users/me", userHandler.PatchMe)
@@ -92,5 +91,4 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)
 	projectRoutes(api, projectHandler, cfg)
-
 }
