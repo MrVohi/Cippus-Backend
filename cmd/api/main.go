@@ -8,17 +8,25 @@ import (
 
 	"cippus-backend/config"
 	"cippus-backend/internal/handlers"
+	"cippus-backend/internal/middleware"
 	"cippus-backend/internal/services"
 )
 
 func main() {
-	router := gin.Default()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error while loading .env file: ", err)
 	}
 	cfg := config.Load()
 	config.InitLogger(cfg.LogLevel)
+
+	if cfg.LogLevel != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(middleware.SlogLogger())
+
 	db, err := config.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatal("Error while connecting to db: ", err)
