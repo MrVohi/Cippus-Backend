@@ -49,18 +49,23 @@ func (h *PostHandler) GetPostsHandler(ctx *gin.Context) {
 	filter.CategoryID = category
 	filter.AuthorID = author
 	filter.Stuck = stuck
+	filter.Sort = ctx.Query("sort")
 
 	q := ctx.Query("q")
 	if q != "" {
 		filter.Q = &q
 	}
 
-	post, err := h.service.GetPosts(filter)
+	posts, err := h.service.GetPosts(filter)
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Cannot find post for the moment."})
 		return
 	}
-	ctx.JSON(200, gin.H{"post": post})
+	resp := make([]PostResponse, len(posts))
+	for i, p := range posts {
+		resp[i] = toPostResponse(p)
+	}
+	ctx.JSON(200, gin.H{"post": resp})
 }
 
 func (h *PostHandler) GetPostsByIdHandler(ctx *gin.Context) {
@@ -87,27 +92,41 @@ func (h *PostHandler) GetPostsByIdHandler(ctx *gin.Context) {
 			return
 		}
 	}
-	ctx.JSON(200, gin.H{"post": post})
+	ctx.JSON(200, gin.H{"post": toPostResponse(post)})
 }
 
 func (h *PostHandler) CreatePostHandler(ctx *gin.Context) {
-	req := services.PostInput{}
-	err := ctx.ShouldBindJSON(&req)
-
-	if err != nil {
+	title := ctx.PostForm("title")
+	content := ctx.PostForm("content")
+	if title == "" || content == "" {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return
 	}
 
+	var categoryIDs []uint
+	for _, s := range ctx.PostFormArray("category_ids") {
+		id, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid category ID"})
+			return
+		}
+		categoryIDs = append(categoryIDs, uint(id))
+	}
+
+	req := services.PostInput{
+		Title:       title,
+		Content:     content,
+		CategoryIDs: categoryIDs,
+	}
+
 	userID := uint(ctx.GetFloat64("userID"))
 	post, err := h.service.CreatePost(userID, req)
-
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Could not create post"})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"post": post})
+	ctx.JSON(201, gin.H{"post": toPostResponse(post)})
 }
 
 func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
@@ -124,12 +143,23 @@ func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
 		return
 	}
 
-	req := services.PostInput{}
-	err = ctx.ShouldBindJSON(&req)
+	title := ctx.PostForm("title")
+	content := ctx.PostForm("content")
 
-	if err != nil {
-		ctx.JSON(400, gin.H{"error": "Invalid Request"})
-		return
+	var categoryIDs []uint
+	for _, s := range ctx.PostFormArray("category_ids") {
+		catID, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid category ID"})
+			return
+		}
+		categoryIDs = append(categoryIDs, uint(catID))
+	}
+
+	req := services.PostInput{
+		Title:       title,
+		Content:     content,
+		CategoryIDs: categoryIDs,
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
@@ -149,7 +179,7 @@ func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(200, gin.H{"post": post})
+	ctx.JSON(200, gin.H{"post": toPostResponse(post)})
 }
 
 func (h *PostHandler) DeletePostHandler(ctx *gin.Context) {
