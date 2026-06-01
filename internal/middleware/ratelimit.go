@@ -17,6 +17,19 @@ var (
 	limiters sync.Map
 )
 
+func init() {
+	go func() {
+		for range time.Tick(5 * time.Minute) {
+			limiters.Range(func(key, val any) bool {
+				if time.Since(val.(*ipLimiter).lastSeen) > 5*time.Minute {
+					limiters.Delete(key)
+				}
+				return true
+			})
+		}
+	}()
+}
+
 func getLimiter(ip string, rpm int) *rate.Limiter {
 	r := rate.Every(time.Minute / time.Duration(rpm))
 	val, _ := limiters.LoadOrStore(ip, &ipLimiter{
