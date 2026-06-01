@@ -178,7 +178,7 @@ func (s *AuthService) PasswordResetRequest(email string) (error){
 		From:    "onboarding@resend.dev",
 		To:      []string{user.Email},
 		Subject: "Password reset",
-		Html:    "<p>Reset link: http://localhost:3000/auth/password-reset?token=" + token + "</p>",
+		Html:    "<p>Reset link: " + s.frontendURL + "/auth/password-reset?token=" + token + "</p>",
 	}
 
 	client.Emails.Send(&params)
@@ -226,6 +226,6 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 	return nil
 }
 
-func NewAuthService(db *gorm.DB, secret, resendApiKey, recaptchaSecret string) *AuthService {
-	return &AuthService{db: db, secret: secret, resendApiKey: resendApiKey, recaptchaSecret: recaptchaSecret}
+func NewAuthService(db *gorm.DB, secret, frontendURL, resendApiKey, recaptchaSecret string) *AuthService {
+	return &AuthService{db: db, secret: secret, frontendURL: frontendURL, resendApiKey: resendApiKey, recaptchaSecret: recaptchaSecret}
 }

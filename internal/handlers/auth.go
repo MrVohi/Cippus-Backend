@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"strings"
 
 	"cippus-backend/internal/services"
@@ -39,6 +40,7 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		result.RefreshToken,
@@ -69,6 +71,7 @@ func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		result.RefreshToken,
@@ -79,7 +82,6 @@ func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
 		true,
 	)
 	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": result.User})
-
 }
 
 func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
@@ -95,6 +97,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		refresh,
@@ -120,6 +123,7 @@ func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 	ctx.JSON(200, gin.H{})
 }

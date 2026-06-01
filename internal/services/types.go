@@ -10,6 +10,7 @@ import (
 type AuthService struct {
 	db              *gorm.DB
 	secret          string
+	frontendURL     string
 	resendApiKey    string
 	recaptchaSecret string
 }
