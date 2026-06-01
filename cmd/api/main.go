@@ -1,7 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -26,6 +33,10 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.SlogLogger())
+	router.Use(func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4<<20)
+		c.Next()
+	})
 
 	db, err := config.Connect(cfg.DatabaseURL)
 	if err != nil {
@@ -55,7 +66,30 @@ func main() {
 
 	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, &cfg)
 
-	if err := router.Run(cfg.Port); err != nil {
-		log.Fatal("Server failed to start: ", err)
+	srv := &http.Server{
+		Addr:              cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server failed", "err", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("graceful shutdown failed", "err", err)
 	}
 }
