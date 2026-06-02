@@ -1,14 +1,29 @@
 package handlers
 
 import (
-	"net/http"
+	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	"cippus-backend/internal/services"
 
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+
 	"github.com/gin-gonic/gin"
 )
+
+var googleOauthConfig = &oauth2.Config{
+	RedirectURL:  "http://localhost:8080/api/v1/auth/google/callback",
+	ClientID:     "TON_CLIENT_ID_DE_GOOGLE_CLOUD",     // Idéalement à lier avec ton cfg.GoogleClientID
+	ClientSecret: "TON_CLIENT_SECRET_DE_GOOGLE_CLOUD", // Idéalement à lier avec ton cfg.GoogleClientSecret
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Endpoint:     google.Endpoint,
+}
+
+const oauthStateString = "random_state_string"
 
 func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 	req := RegisterRequest{}
@@ -110,6 +125,47 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		true,
 	)
 	ctx.JSON(200, gin.H{"user": toUserResponse(user), "accessToken": access})
+}
+
+func (h *AuthHandler) GoogleLoginHandler(c *gin.Context) {
+	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
+	state := c.Query("state")
+	if state != oauthStateString {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "État de sécurité invalide"})
+		return
+	}
+	code := c.Query("code")
+	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Échec de l'échange de token"})
+		return
+	}
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les infos utilisateur"})
+		return
+	}
+	defer response.Body.Close()
+
+	var googleUser struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(&googleUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Échec du décodage des infos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Connexion Google réussie !",
+		"user":    googleUser,
+	})
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
