@@ -13,11 +13,11 @@ import (
 func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 	auth := api.Group("/auth")
 	{
-		auth.POST("/register", authHandler.RegisterHandler)
-		auth.POST("/login", authHandler.LoginHandler)
+		auth.POST("/register", middleware.RateLimiter(3), authHandler.RegisterHandler)
+		auth.POST("/login", middleware.RateLimiter(5), authHandler.LoginHandler)
 		auth.POST("/refresh", authHandler.RefreshHandler)
-		auth.POST("/password-reset/request", authHandler.PasswordResetRequestHandler)
-		auth.POST("/password-reset/confirm", authHandler.PasswordResetConfirmHandler)
+		auth.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
+		auth.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
 	}
 }
 
@@ -76,7 +76,7 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 
 func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
-	corsCfg.AllowOrigins = []string{"http://localhost:3000"}
+	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	corsCfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	corsCfg.AllowCredentials = true

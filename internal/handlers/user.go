@@ -15,7 +15,7 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 }
 
 func (h *UserHandler) PatchMe(ctx *gin.Context) {
-	userID := ctx.GetUint("userID")
+	userID := uint(ctx.GetFloat64("userID"))
 	if userID == 0 {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return

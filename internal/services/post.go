@@ -57,7 +57,6 @@ func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, e
 		UserId:           authorID,
 		Title:            input.Title,
 		Content:          input.Content,
-		ImageURL:         input.ImageURL,
 		ModerationStatus: models.ModerationPending,
 	}
 
@@ -105,9 +104,6 @@ func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input 
 	}
 	if input.Content != "" {
 		post.Content = input.Content
-	}
-	if input.ImageURL != "" {
-		post.ImageURL = input.ImageURL
 	}
 	if input.Stuck != nil {
 		post.Stuck = *input.Stuck

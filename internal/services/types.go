@@ -10,6 +10,7 @@ import (
 type AuthService struct {
 	db              *gorm.DB
 	secret          string
+	frontendURL     string
 	resendApiKey    string
 	recaptchaSecret string
 }
@@ -29,11 +30,10 @@ type PostService struct {
 }
 
 type PostInput struct {
-	Title       string `json:"title"`
-	Content     string `json:"content"`
-	ImageURL    string `json:"imageUrl"`
-	CategoryIDs []uint `json:"categoryIds"`
-	Stuck       *bool  `json:"stuck"`
+	Title       string `json:"title"       binding:"required,min=3,max=200"`
+	Content     string `json:"content"     binding:"required,min=10"`
+	CategoryIDs []uint `json:"categoryIds" binding:"required,min=1"`
+	Stuck       *bool  `json:"stuck"       binding:"omitempty"`
 }
 
 type GetPostsFilter struct {
@@ -55,8 +55,8 @@ type CategoryService struct {
 }
 
 type CategoryInput struct {
-	Name        string
-	Description string
+	Name        string `json:"name"        binding:"required,min=2,max=50"`
+	Description string `json:"description" binding:"omitempty,max=255"`
 }
 
 type ProjectService struct {
@@ -64,6 +64,6 @@ type ProjectService struct {
 }
 
 type ProjectInput struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string `json:"title"       binding:"required,min=3,max=100"`
+	Description string `json:"description" binding:"omitempty,max=1000"`
 }
