@@ -65,7 +65,9 @@ func GenerateUniqueUsername(db *gorm.DB, base string) string {
 
 	for {
 		raw := make([]byte, 2)
-		rand.Read(raw)
+		if _, err := rand.Read(raw); err != nil {
+			return base
+		}
 
 		var candidate string
 
@@ -147,15 +149,17 @@ func (s *AuthService) Logout(userID uint) error {
 	return nil
 }
 
-func (s *AuthService) PasswordResetRequest(email string) (error){
+func (s *AuthService) PasswordResetRequest(email string) error {
 	user := models.User{}
 	result := s.db.Where("email = ?", email).First(&user)
 	if result.Error != nil {
-		return fmt.Errorf("Cannot find user")
+		return nil // silently do nothing — never reveal whether email is registered
 	}
 
 	raw := make([]byte, 32)
-	rand.Read(raw)
+	if _, err := rand.Read(raw); err != nil {
+		return fmt.Errorf("cannot generate reset token")
+	}
 	token := hex.EncodeToString(raw)
 
 	hash := sha256.Sum256([]byte(token))
@@ -186,25 +190,12 @@ func (s *AuthService) PasswordResetRequest(email string) (error){
 }
 
 func (s *AuthService) PasswordResetConfirm(token string, newPassword string) error {
-	var tokens []models.PasswordResetToken
-	result := s.db.Where("used_at is NULL").Where("expires_at > ?", time.Now()).Find(&tokens)
-	if result.Error != nil {
-		return fmt.Errorf("Invalid or expired token")
-	}
-
 	incomingHash := sha256.Sum256([]byte(token))
 	incomingHashHex := hex.EncodeToString(incomingHash[:])
 
-	var found *models.PasswordResetToken
-
-	for _, pst := range tokens {
-		if pst.TokenHash == incomingHashHex {
-			found = &pst
-			break
-		}
-	}
-
-	if found == nil {
+	var found models.PasswordResetToken
+	result := s.db.Where("token_hash = ? AND used_at IS NULL AND expires_at > ?", incomingHashHex, time.Now()).First(&found)
+	if result.Error != nil {
 		return fmt.Errorf("invalid or expired token")
 	}
 
@@ -218,8 +209,10 @@ func (s *AuthService) PasswordResetConfirm(token string, newPassword string) err
 		return fmt.Errorf("Cannot update password")
 	}
 
+	s.db.Where("user_id = ?", found.UserID).Delete(&models.RefreshToken{})
+
 	now := time.Now()
-	result = s.db.Model(found).Update("used_at", &now)
+	result = s.db.Model(&found).Update("used_at", &now)
 	if result.Error != nil {
 		return fmt.Errorf("Cannot update password")
 	}
