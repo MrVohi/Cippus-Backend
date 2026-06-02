@@ -25,9 +25,9 @@ func postRoutes(api *gin.RouterGroup, postHandler *handlers.PostHandler, cfg *co
 	publicPosts := api.Group("/logs")
 	privatePosts := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		publicPosts.GET("/", postHandler.GetPostsHandler)
+		publicPosts.GET("", postHandler.GetPostsHandler)
 		publicPosts.GET("/:id", postHandler.GetPostsByIdHandler)
-		privatePosts.POST("/", postHandler.CreatePostHandler)
+		privatePosts.POST("", postHandler.CreatePostHandler)
 		privatePosts.PATCH("/:id", postHandler.UpdatePostHandler)
 		privatePosts.DELETE("/:id", postHandler.DeletePostHandler)
 	}
@@ -45,8 +45,8 @@ func categoryRoutes(api *gin.RouterGroup, categoryHandler *handlers.CategoryHand
 	publicCategories := api.Group("/categories")
 	privateCategories := api.Group("/categories").Use(middleware.AuthMiddleware(cfg.JWTSecret)).Use(middleware.RequireRole(models.RoleModerator, models.RoleAdmin))
 	{
-		publicCategories.GET("/", categoryHandler.GetCategoriesHandler)
-		privateCategories.POST("/", categoryHandler.CreateCategoryHandler)
+		publicCategories.GET("", categoryHandler.GetCategoriesHandler)
+		privateCategories.POST("", categoryHandler.CreateCategoryHandler)
 		privateCategories.PATCH("/:id", categoryHandler.UpdateCategoryHandler)
 		privateCategories.DELETE("/:id", categoryHandler.DeleteCategoryHandler)
 	}
@@ -58,7 +58,7 @@ func projectRoutes(api *gin.RouterGroup, projectHandler *handlers.ProjectHandler
 	{
 		api.GET("/users/:userId/projects", projectHandler.GetProjectsByUserHandler)
 		publicProjects.GET("/:id", projectHandler.GetProjectsByIdHandler)
-		privateProjects.POST("/", projectHandler.CreateProjectHandler)
+		privateProjects.POST("", projectHandler.CreateProjectHandler)
 		privateProjects.PATCH("/:id", projectHandler.UpdateProjectHandler)
 		privateProjects.DELETE("/:id", projectHandler.DeleteProjectHandler)
 		privateProjects.POST("/:id/posts/:postId", projectHandler.AddPostToProjectHandler)

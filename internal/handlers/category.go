@@ -8,12 +8,16 @@ import (
 )
 
 func (h *CategoryHandler) GetCategoriesHandler(ctx *gin.Context) {
-	category, err := h.service.GetCategories()
+	categories, err := h.service.GetCategories()
 	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Cannot find category for the moment."})
 		return
 	}
-	ctx.JSON(200, gin.H{"category": category})
+	resp := make([]CategoryResponse, len(categories))
+	for i, c := range categories {
+		resp[i] = CategoryResponse{CategoryID: c.ID, Name: c.Name, Description: c.Description}
+	}
+	ctx.JSON(200, gin.H{"category": resp})
 }
 
 func (h *CategoryHandler) CreateCategoryHandler(ctx *gin.Context) {
@@ -32,7 +36,8 @@ func (h *CategoryHandler) CreateCategoryHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(201, gin.H{"category": category})
+	resp := CategoryResponse{CategoryID: category.ID, Name: category.Name, Description: category.Description}
+	ctx.JSON(201, gin.H{"category": resp})
 }
 
 func (h *CategoryHandler) UpdateCategoryHandler(ctx *gin.Context) {
@@ -69,7 +74,8 @@ func (h *CategoryHandler) UpdateCategoryHandler(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(200, gin.H{"category": category})
+	resp := CategoryResponse{CategoryID: category.ID, Name: category.Name, Description: category.Description}
+	ctx.JSON(200, gin.H{"category": resp})
 }
 
 func (h *CategoryHandler) DeleteCategoryHandler(ctx *gin.Context) {

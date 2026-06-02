@@ -26,6 +26,12 @@ func (s *PostService) GetPosts(filters GetPostsFilter) ([]models.Post, error) {
 		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+*filters.Q+"%", "%"+*filters.Q+"%")
 	}
 
+	if filters.Sort == "new" {
+		query = query.Order("created_at DESC")
+	} else {
+		query = query.Order("updated_at DESC")
+	}
+
 	result := query.Find(&row)
 	if result.Error != nil {
 		return nil, result.Error

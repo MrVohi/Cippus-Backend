@@ -51,7 +51,7 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": result.User})
+	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": toUserResponse(result.User)})
 }
 
 func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
@@ -82,7 +82,8 @@ func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": result.User})
+	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": toUserResponse(result.User)})
+
 }
 
 func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
@@ -108,7 +109,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(200, gin.H{"user": user, "accessToken": access})
+	ctx.JSON(200, gin.H{"user": toUserResponse(user), "accessToken": access})
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {

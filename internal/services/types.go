@@ -41,6 +41,7 @@ type GetPostsFilter struct {
 	AuthorID   *uint
 	Stuck      *bool
 	Q          *string
+	Sort       string
 }
 
 type MinioService struct {
