@@ -24,7 +24,7 @@ func main() {
 		log.Fatal("Error while connecting to db: ", err)
 	}
 
-	authService := services.NewAuthService(db, cfg.JWTSecret, cfg.ResendApiKey, cfg.RecaptchaSecret)
+	authService := services.NewAuthService(db, cfg.JWTSecret, cfg.FrontendURL, cfg.ResendApiKey, cfg.RecaptchaSecret)
 	authHandler := handlers.NewAuthHandler(authService)
 
 	userService := services.NewUserService(db)

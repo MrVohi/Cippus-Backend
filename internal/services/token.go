@@ -2,6 +2,7 @@ package services
 
 import (
 	"cippus-backend/internal/models"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -28,19 +29,14 @@ func GenerateRefreshToken(userID uint, secret string) (string, []byte, error) {
 }
 
 func StoreRefreshToken(db *gorm.DB, userID uint, hash []byte) error {
-	db.Where("user_id = ?", userID).Delete(&models.RefreshToken{})
-
-	pk := db.Create(&models.RefreshToken{
-		UserID:    userID,
-		TokenHash: hex.EncodeToString(hash),
-		ExpiresAt: time.Now().AddDate(0, 0, 7),
+	return db.Transaction(func(tx *gorm.DB) error {
+		tx.Where("user_id = ?", userID).Delete(&models.RefreshToken{})
+		return tx.Create(&models.RefreshToken{
+			UserID:    userID,
+			TokenHash: hex.EncodeToString(hash),
+			ExpiresAt: time.Now().AddDate(0, 0, 7),
+		}).Error
 	})
-
-	if pk.Error == nil {
-		return nil
-	} else {
-		return fmt.Errorf("Failed to store Refresh token (%w) of User %d", pk.Error, userID)
-	}
 }
 
 func FindRefreshToken(db *gorm.DB, userID uint) (models.RefreshToken, error) {
@@ -63,7 +59,7 @@ func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte, secret string
 
 	hash := sha256.Sum256([]byte(incoming))
 
-	if rt.TokenHash != hex.EncodeToString(hash[:]) {
+	if subtle.ConstantTimeCompare([]byte(rt.TokenHash), []byte(hex.EncodeToString(hash[:]))) != 1 {
 		return "", nil, fmt.Errorf("Refresh token for User %d does not match database!", userID)
 	}
 	err = DeleteRefreshToken(db, rt.ID)
@@ -82,7 +78,6 @@ func RotateRefreshToken(db *gorm.DB, userID uint, incoming []byte, secret string
 	}
 
 	return newPlain, newHash, nil
-
 }
 
 func ParseRefreshToken(token string, secret string) (uint, error) {
