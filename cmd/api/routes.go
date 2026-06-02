@@ -13,11 +13,11 @@ import (
 func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 	auth := api.Group("/auth")
 	{
-		auth.POST("/register", authHandler.RegisterHandler)
-		auth.POST("/login", authHandler.LoginHandler)
+		auth.POST("/register", middleware.RateLimiter(3), authHandler.RegisterHandler)
+		auth.POST("/login", middleware.RateLimiter(5), authHandler.LoginHandler)
 		auth.POST("/refresh", authHandler.RefreshHandler)
-		auth.POST("/password-reset/request", authHandler.PasswordResetRequestHandler)
-		auth.POST("/password-reset/confirm", authHandler.PasswordResetConfirmHandler)
+		auth.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
+		auth.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
 	}
 }
 
