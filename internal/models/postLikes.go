@@ -4,9 +4,9 @@ import "gorm.io/gorm"
 
 type PostLike struct {
 	gorm.Model
-	UserID uint
+	UserID uint `gorm:"uniqueIndex:idx_post_like;not null"`
 	User   User
-	PostID uint
+	PostID uint `gorm:"uniqueIndex:idx_post_like;not null"`
 	Post   Post
 	Liked  bool
 }
