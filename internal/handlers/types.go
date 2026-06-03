@@ -3,6 +3,7 @@ package handlers
 import (
 	"cippus-backend/internal/models"
 	"cippus-backend/internal/services"
+	"cippus-backend/internal/ws"
 	"time"
 )
 
@@ -122,4 +123,15 @@ func toPostResponse(p models.Post) PostResponse {
 
 type ProjectHandler struct {
 	service *services.ProjectService
+}
+
+type MessageHandler struct {
+	service *services.MessageService
+	Hub     *ws.Hub
+	notif   *services.NotificationService
+}
+
+type PushHandler struct {
+	service     *services.PushService
+	vapidPublic string
 }

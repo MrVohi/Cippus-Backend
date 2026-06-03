@@ -17,6 +17,7 @@ import (
 	"cippus-backend/internal/handlers"
 	"cippus-backend/internal/middleware"
 	"cippus-backend/internal/services"
+	"cippus-backend/internal/ws"
 )
 
 func main() {
@@ -64,7 +65,23 @@ func main() {
 	}
 	minioHandler := handlers.NewMinioHandler(minioService, postService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, &cfg)
+	rabbit, err := services.NewRabbitPublisher(cfg.RabbitmqURL)
+	if err != nil {
+		log.Fatal("Error while connecting to RabbitMQ: ", err)
+	}
+	defer rabbit.Close()
+
+	notificationService := services.NewNotificationService(db, rabbit)
+
+	messageService := services.NewMessageService(db)
+	hub := ws.NewHub()
+	go hub.Run()
+	messageHandler := handlers.NewMessageHandler(messageService, hub, notificationService)
+
+	pushService := services.NewPushService(db, cfg.VapidPublicKey, cfg.VapidPrivateKey, cfg.VapidSubject)
+	pushHandler := handlers.NewPushHandler(pushService, cfg.VapidPublicKey)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,
