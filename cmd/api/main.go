@@ -64,7 +64,10 @@ func main() {
 	}
 	minioHandler := handlers.NewMinioHandler(minioService, postService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, &cfg)
+	commentService := services.NewCommentService(db)
+	commentHandler := handlers.NewCommentHandler(commentService)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, commentHandler, &cfg) //commentHandlers and &cfg to modify later.
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

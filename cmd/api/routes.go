@@ -76,7 +76,7 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, cfg *config.Config, commentHandler *handlers.CommentHandler) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -94,5 +94,15 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)
 	projectRoutes(api, projectHandler, cfg)
+	commentRoutes(api, commentHandler, cfg)
 
+}
+
+func commentRoutes(api *gin.RouterGroup, commentHandler *handlers.CommentHandler, cfg *config.Config) {
+	publicComments := api.Group("/logs")
+	privateComments := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+
+	publicComments.GET("/:id/comments", commentHandler.GetCommentsByPostIDHandler)
+	privateComments.POST("/:id/comments", commentHandler.CreateCommentHandler)
+	privateComments.DELETE("/:id/comments/:commentId", commentHandler.DeleteCommentHandler)
 }
