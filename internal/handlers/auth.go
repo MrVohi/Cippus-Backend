@@ -1,13 +1,12 @@
 package handlers
 
 import (
+	"cippus-backend/internal/services"
 	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"cippus-backend/internal/services"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -166,6 +165,25 @@ func (h *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 		"message": "Connexion Google réussie !",
 		"user":    googleUser,
 	})
+
+	result, err := h.service.LoginOrCreateWithGoogle(googleUser.Email, googleUser.Name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de vous connecter via Google pour le moment."})
+		return
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"refresh_token",
+		result.RefreshToken,
+		7*24*3600,
+		"/",
+		"",
+		true,
+		true,
+	)
+	frontendRedirectURL := "http://localhost:3000/auth/success?token=" + result.AccessToken
+	c.Redirect(http.StatusTemporaryRedirect, frontendRedirectURL)
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
