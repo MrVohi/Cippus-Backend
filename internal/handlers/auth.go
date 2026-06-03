@@ -161,11 +161,6 @@ func (h *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Connexion Google réussie !",
-		"user":    googleUser,
-	})
-
 	result, err := h.service.LoginOrCreateWithGoogle(googleUser.Email, googleUser.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de vous connecter via Google pour le moment."})
