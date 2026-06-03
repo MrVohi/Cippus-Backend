@@ -5,6 +5,7 @@ import (
 	"cippus-backend/internal/handlers"
 	"cippus-backend/internal/middleware"
 	"cippus-backend/internal/models"
+	"cippus-backend/internal/ws"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -66,6 +67,26 @@ func projectRoutes(api *gin.RouterGroup, projectHandler *handlers.ProjectHandler
 	}
 }
 
+func messagesRoutes(api *gin.RouterGroup, messageHandler *handlers.MessageHandler, cfg *config.Config) {
+	messages := api.Group("/messages").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		api.GET("/ws", ws.ServeWS(messageHandler.Hub, cfg.JWTSecret))
+		messages.POST("", messageHandler.Send)
+		messages.GET("", messageHandler.GetConversations)
+		messages.GET("/:userID", messageHandler.GetThread)
+		messages.PUT("/:messageID/read", messageHandler.MarkAsRead)	
+	}
+}
+
+func pushRoutes(api *gin.RouterGroup, pushHandler *handlers.PushHandler, cfg *config.Config) {
+	pushs := api.Group("/push").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		api.GET("/push/vapid-public-key", pushHandler.GetVapidKey)
+		pushs.POST("/subscribe", pushHandler.Subscribe)
+		pushs.DELETE("/subscribe", pushHandler.Unsubscribe)
+	}
+}
+
 func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
 	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
@@ -74,7 +95,7 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -92,5 +113,7 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)
 	projectRoutes(api, projectHandler, cfg)
+	messagesRoutes(api, messageHandler, cfg)
+	pushRoutes(api, pushHandler, cfg)
 
 }
