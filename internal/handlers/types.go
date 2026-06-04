@@ -33,8 +33,14 @@ type AuthHandler struct {
 }
 
 type PatchMeRequest struct {
-	Username *string `json:"username" binding:"omitempty,min=2,max=30"`
-	Bio      *string `json:"bio"      binding:"omitempty,max=500"`
+	Username          *string `json:"username" binding:"omitempty,min=2,max=30"`
+	Bio               *string `json:"bio"      binding:"omitempty,max=500"`
+	NotifReply        *bool   `json:"notif_replies"`
+	NotifFollows      *bool   `json:"notif_follows"`
+	NotifLike         *bool   `json:"notif_likes"`
+	NotifMention      *bool   `json:"notif_mentions"`
+	NotifDM           *bool   `json:"notif_dms"`
+	NotifPostApproved *bool   `json:"notif_post_approved"`
 }
 
 type PostHandler struct {
@@ -134,4 +140,8 @@ type MessageHandler struct {
 type PushHandler struct {
 	service     *services.PushService
 	vapidPublic string
+}
+
+type NotificationHandler struct {
+	service *services.NotificationService
 }

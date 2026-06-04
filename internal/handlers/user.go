@@ -36,6 +36,25 @@ func (h *UserHandler) PatchMe(ctx *gin.Context) {
 		userMap["bio"] = *req.Bio
 	}
 
+	if req.NotifReply != nil {
+		userMap["notif_reply"] = *req.NotifReply
+	}
+	if req.NotifFollows != nil {
+		userMap["notif_follow"] = *req.NotifFollows
+	}
+	if req.NotifLike != nil {
+		userMap["notif_like"] = *req.NotifLike
+	}
+	if req.NotifMention != nil {
+		userMap["notif_mention"] = *req.NotifMention
+	}
+	if req.NotifDM != nil {
+		userMap["notif_dm"] = *req.NotifDM
+	}
+	if req.NotifPostApproved != nil {
+		userMap["notif_post_approved"] = *req.NotifPostApproved
+	}
+
 	if len(userMap) == 0 {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return

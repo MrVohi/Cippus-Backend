@@ -72,6 +72,7 @@ func main() {
 	defer rabbit.Close()
 
 	notificationService := services.NewNotificationService(db, rabbit)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
 
 	messageService := services.NewMessageService(db)
 	hub := ws.NewHub()
@@ -81,7 +82,7 @@ func main() {
 	pushService := services.NewPushService(db, cfg.VapidPublicKey, cfg.VapidPrivateKey, cfg.VapidSubject)
 	pushHandler := handlers.NewPushHandler(pushService, cfg.VapidPublicKey)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, &cfg)
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

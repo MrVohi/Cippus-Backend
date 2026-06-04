@@ -11,6 +11,12 @@ func NewNotificationService(db *gorm.DB, rabbit *RabbitPublisher) *NotificationS
 	return &NotificationService{db: db, rabbit: rabbit}
 }
 
+func (s *NotificationService) GetNotifications(userID uint) ([]models.Notification, error) {
+	var notifications []models.Notification
+	err := s.db.Where("recipient_id = ?", userID).Order("created_at DESC").Find(&notifications).Error
+	return notifications, err
+}
+
 func (s *NotificationService) Notify(
 	recipientID uint,
 	actorID uint,
