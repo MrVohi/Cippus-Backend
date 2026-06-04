@@ -95,7 +95,14 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, cfg *config.Config) {
+func notificationRoutes(api *gin.RouterGroup, notificationHandler *handlers.NotificationHandler, cfg *config.Config) {
+	notifications := api.Group("/notifications").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	{
+		notifications.GET("", notificationHandler.GetNotifications)
+	}
+}
+
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -115,5 +122,6 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	projectRoutes(api, projectHandler, cfg)
 	messagesRoutes(api, messageHandler, cfg)
 	pushRoutes(api, pushHandler, cfg)
+	notificationRoutes(api, notificationHandler, cfg)
 
 }
