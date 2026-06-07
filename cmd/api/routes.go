@@ -115,4 +115,3 @@ func postLikeRoutes(api *gin.RouterGroup, postLikeHandler *handlers.PostLikeHand
     public.GET("/:id/likes", postLikeHandler.GetLikesHandler)
     private.POST("/:id/likes", postLikeHandler.LikePostHandler)
 }
-
