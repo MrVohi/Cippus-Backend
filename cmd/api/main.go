@@ -50,7 +50,8 @@ func main() {
 	userService := services.NewUserService(db)
 	userHandler := handlers.NewUserHandler(userService)
 
-	postService := services.NewPostService(db)
+	embeddingService := services.NewEmbeddingService(cfg)
+	postService := services.NewPostService(db, embeddingService)
 	postHandler := handlers.NewPostHandler(postService)
 
 	categoryService := services.NewCategoryService(db)
@@ -82,7 +83,10 @@ func main() {
 	pushService := services.NewPushService(db, cfg.VapidPublicKey, cfg.VapidPrivateKey, cfg.VapidSubject)
 	pushHandler := handlers.NewPushHandler(pushService, cfg.VapidPublicKey)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, &cfg)
+	searchService := services.NewSearchService(db, embeddingService)
+	searchHandler := handlers.NewSearchHandler(searchService)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

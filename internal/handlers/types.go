@@ -145,3 +145,7 @@ type PushHandler struct {
 type NotificationHandler struct {
 	service *services.NotificationService
 }
+
+type SearchHandler struct {
+	service *services.SearchService
+}

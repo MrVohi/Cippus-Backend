@@ -102,7 +102,13 @@ func notificationRoutes(api *gin.RouterGroup, notificationHandler *handlers.Noti
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, cfg *config.Config) {
+func searchRoutes(api *gin.RouterGroup, searchHandler *handlers.SearchHandler, cfg *config.Config) {
+	search := api.Group("")
+	search.GET("/search", searchHandler.SearchHandler)
+	search.GET("/logs/:id/similar", searchHandler.GetSimilarHandler)
+}
+
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, searchHandler *handlers.SearchHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -123,5 +129,6 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	messagesRoutes(api, messageHandler, cfg)
 	pushRoutes(api, pushHandler, cfg)
 	notificationRoutes(api, notificationHandler, cfg)
+	searchRoutes(api, searchHandler, cfg)
 
 }
