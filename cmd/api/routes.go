@@ -123,3 +123,4 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	messagesRoutes(api, messageHandler, cfg)
 	pushRoutes(api, pushHandler, cfg)
 	notificationRoutes(api, notificationHandler, cfg)
+}
