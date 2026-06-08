@@ -4,12 +4,14 @@ import (
 	"cippus-backend/internal/models"
 
 	"github.com/minio/minio-go/v7"
+	"github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 type AuthService struct {
 	db              *gorm.DB
 	secret          string
+	frontendURL     string
 	resendApiKey    string
 	recaptchaSecret string
 }
@@ -29,11 +31,10 @@ type PostService struct {
 }
 
 type PostInput struct {
-	Title       string `json:"title"`
-	Content     string `json:"content"`
-	ImageURL    string `json:"imageUrl"`
-	CategoryIDs []uint `json:"categoryIds"`
-	Stuck       *bool  `json:"stuck"`
+	Title       string `json:"title"       binding:"required,min=3,max=200"`
+	Content     string `json:"content"     binding:"required,min=10"`
+	CategoryIDs []uint `json:"categoryIds" binding:"required,min=1"`
+	Stuck       *bool  `json:"stuck"       binding:"omitempty"`
 }
 
 type GetPostsFilter struct {
@@ -41,6 +42,7 @@ type GetPostsFilter struct {
 	AuthorID   *uint
 	Stuck      *bool
 	Q          *string
+	Sort       string
 }
 
 type MinioService struct {
@@ -54,8 +56,8 @@ type CategoryService struct {
 }
 
 type CategoryInput struct {
-	Name        string
-	Description string
+	Name        string `json:"name"        binding:"required,min=2,max=50"`
+	Description string `json:"description" binding:"omitempty,max=255"`
 }
 
 type ProjectService struct {
@@ -63,6 +65,27 @@ type ProjectService struct {
 }
 
 type ProjectInput struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string `json:"title"       binding:"required,min=3,max=100"`
+	Description string `json:"description" binding:"omitempty,max=1000"`
+}
+
+type MessageService struct {
+	db *gorm.DB
+}
+
+type PushService struct {
+	db              *gorm.DB
+	vapidPublic     string
+	vapidPrivate    string
+	vapidSubscriber string
+}
+
+type RabbitPublisher struct {
+	conn    *amqp091.Connection
+    channel *amqp091.Channel
+}
+
+type NotificationService struct {
+	db     *gorm.DB
+	rabbit *RabbitPublisher
 }

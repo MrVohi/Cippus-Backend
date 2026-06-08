@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -22,11 +24,13 @@ func (s *MinioService) UploadFile(file io.Reader, size int64, originalFilename s
 	return "http://" + s.Endpoint + "/" + s.Bucket + "/" + objectName, nil
 }
 
-func (s *MinioService) DeleteFile(imageURL string) error  {
+func (s *MinioService) DeleteFile(imageURL string) error {
+	expectedPrefix := "http://" + s.Endpoint + "/" + s.Bucket + "/"
+	if !strings.HasPrefix(imageURL, expectedPrefix) {
+		return fmt.Errorf("invalid image URL: unexpected origin")
+	}
 	objectName := filepath.Base(imageURL)
-
-	err := s.Client.RemoveObject(context.Background(), s.Bucket, objectName, minio.RemoveObjectOptions{})
-	return err
+	return s.Client.RemoveObject(context.Background(), s.Bucket, objectName, minio.RemoveObjectOptions{})
 }
 
 func NewMinioService(endpoint string, accessKey string, secretKey string, bucket string) (*MinioService, error) {

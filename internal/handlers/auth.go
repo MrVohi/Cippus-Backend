@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/http"
+	"log/slog"
 	"strings"
 
 	"cippus-backend/internal/services"
@@ -39,6 +41,7 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		result.RefreshToken,
@@ -48,7 +51,7 @@ func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": result.User})
+	ctx.JSON(201, gin.H{"accessToken": result.AccessToken, "user": toUserResponse(result.User)})
 }
 
 func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
@@ -69,6 +72,7 @@ func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		result.RefreshToken,
@@ -78,7 +82,7 @@ func (h *AuthHandler) LoginHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": result.User})
+	ctx.JSON(200, gin.H{"accessToken": result.AccessToken, "user": toUserResponse(result.User)})
 
 }
 
@@ -95,6 +99,7 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie(
 		"refresh_token",
 		refresh,
@@ -104,11 +109,11 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		true,
 		true,
 	)
-	ctx.JSON(200, gin.H{"user": user, "accessToken": access})
+	ctx.JSON(200, gin.H{"user": toUserResponse(user), "accessToken": access})
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
-	userID := ctx.GetUint("userID")
+	userID := uint(ctx.GetFloat64("userID"))
 	if userID == 0 {
 		ctx.JSON(400, gin.H{"error": "Invalid Request"})
 		return
@@ -120,6 +125,7 @@ func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("refresh_token", "", -1, "/", "", true, true)
 	ctx.JSON(200, gin.H{})
 }
@@ -133,8 +139,7 @@ func (h *AuthHandler) PasswordResetRequestHandler(ctx *gin.Context) {
 	}
 
 	if err := h.service.PasswordResetRequest(req.Email); err != nil {
-		ctx.JSON(500, gin.H{"error": "Cannot send password reset email."})
-		return
+		slog.Warn("password reset request failed", "err", err)
 	}
 	ctx.JSON(200, gin.H{})
 }
