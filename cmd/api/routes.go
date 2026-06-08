@@ -88,7 +88,7 @@ func pushRoutes(api *gin.RouterGroup, pushHandler *handlers.PushHandler, cfg *co
 }
 
 func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
-	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	private := api.Group("").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
 		private.POST("/auth/logout", authHandler.LogoutHandler)
 		private.PATCH("/users/me", userHandler.PatchMe)
@@ -123,5 +123,4 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	messagesRoutes(api, messageHandler, cfg)
 	pushRoutes(api, pushHandler, cfg)
 	notificationRoutes(api, notificationHandler, cfg)
-
 }
