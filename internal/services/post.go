@@ -4,6 +4,7 @@ import (
 	"cippus-backend/internal/models"
 	"fmt"
 
+	"github.com/pgvector/pgvector-go"
 	"gorm.io/gorm"
 )
 
@@ -76,7 +77,16 @@ func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, e
 				return post, result.Error
 			}
 		}
+	}
 
+	embedding, err := s.es.GenerateEmbedding(post.Title + " " + post.Content)
+	if err == nil {
+		s.db.Model(&post).Update("embedding", pgvector.NewVector(embedding))
+	}
+  
+	stuck, err := s.es.DetectStuck(post.Title + " " + post.Content)
+	if err == nil && stuck {
+		s.db.Model(&post).Update("stuck", true)
 	}
 
 	return post, nil
@@ -130,6 +140,15 @@ func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input 
 
 	}
 
+	embedding, err := s.es.GenerateEmbedding(post.Title + " " + post.Content)
+	if err == nil {
+		s.db.Model(&post).Update("embedding", pgvector.NewVector(embedding))
+	}
+	stuck, err := s.es.DetectStuck(post.Title + " " + post.Content)
+	if err == nil && stuck {
+		s.db.Model(&post).Update("stuck", true)
+	}
+
 	return post, nil
 }
 
@@ -158,6 +177,6 @@ func (s *PostService) UpdatePostImage(id uint, imageURL string) error {
 	res := s.db.Model(&models.Post{}).Where("id = ?", id).Update("image_url", imageURL)
 	return res.Error
 }
-func NewPostService(db *gorm.DB) *PostService {
-	return &PostService{db: db}
+func NewPostService(db *gorm.DB, embeddingService *EmbeddingService) *PostService {
+	return &PostService{db: db, es: *embeddingService}
 }

@@ -14,6 +14,8 @@ func Connect(dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
+
 	err = db.AutoMigrate(models.Models...)
 	if err != nil {
 		return nil, err

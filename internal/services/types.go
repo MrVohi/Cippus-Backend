@@ -28,6 +28,7 @@ type UserService struct {
 
 type PostService struct {
 	db *gorm.DB
+	es EmbeddingService
 }
 
 type PostInput struct {
@@ -82,10 +83,21 @@ type PushService struct {
 
 type RabbitPublisher struct {
 	conn    *amqp091.Connection
-    channel *amqp091.Channel
+	channel *amqp091.Channel
 }
 
 type NotificationService struct {
 	db     *gorm.DB
 	rabbit *RabbitPublisher
+}
+
+type EmbeddingService struct {
+	url        string
+	embedModel string
+	model      string
+}
+
+type SearchService struct {
+	db *gorm.DB
+	es EmbeddingService
 }
