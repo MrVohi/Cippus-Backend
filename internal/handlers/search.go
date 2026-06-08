@@ -26,7 +26,12 @@ func (h *SearchHandler) SearchHandler(ctx *gin.Context) {
 		ctx.JSON(500, gin.H{"error": "Search failed"})
 		return
 	}
-	ctx.JSON(200, gin.H{"results": results})
+
+	resp := make([]SearchPostResponse, len(results))
+	for i, p := range results {
+		resp[i] = toSearchPostResponse(p)
+	}
+	ctx.JSON(200, gin.H{"results": resp})
 }
 
 func (h *SearchHandler) GetSimilarHandler(ctx *gin.Context) {
@@ -54,7 +59,11 @@ func (h *SearchHandler) GetSimilarHandler(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(200, gin.H{"results": results})
+	resp := make([]SearchPostResponse, len(results))
+	for i, p := range results {
+		resp[i] = toSearchPostResponse(p)
+	}
+	ctx.JSON(200, gin.H{"results": resp})
 }
 
 func NewSearchHandler(searchService *services.SearchService) *SearchHandler {

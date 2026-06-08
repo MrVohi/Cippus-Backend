@@ -149,3 +149,15 @@ type NotificationHandler struct {
 type SearchHandler struct {
 	service *services.SearchService
 }
+
+type SearchPostResponse struct {
+	PostResponse
+	Distance float64 `json:"distance"`
+}
+
+func toSearchPostResponse(p services.PostWithDistance) SearchPostResponse {
+	return SearchPostResponse{
+		PostResponse: toPostResponse(p.Post),
+		Distance:     p.Distance,
+	}
+}
