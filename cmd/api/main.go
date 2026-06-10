@@ -68,10 +68,12 @@ func main() {
 	commentHandler := handlers.NewCommentHandler(commentService)
 
 	postLikeService := services.NewPostLikeService(db)
-    postLikeHandler := handlers.NewPostLikeHandler(postLikeService)
+	postLikeHandler := handlers.NewPostLikeHandler(postLikeService)
 
+	reportService := services.NewReportService(db)
+	reportHandler := handlers.NewReportHandler(reportService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, commentHandler, postLikeHandler, &cfg) 
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, commentHandler, postLikeHandler, reportHandler, &cfg )
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

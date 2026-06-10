@@ -76,7 +76,7 @@ func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, user
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, commentHandler *handlers.CommentHandler, postLikeHandler *handlers.PostLikeHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, commentHandler *handlers.CommentHandler, postLikeHandler *handlers.PostLikeHandler, reportHandler *handlers.ReportHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -96,6 +96,7 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	projectRoutes(api, projectHandler, cfg)
 	commentRoutes(api, commentHandler, cfg)
 	postLikeRoutes(api, postLikeHandler, cfg)
+	reportRoutes(api, reportHandler, cfg)
 
 }
 
@@ -109,9 +110,14 @@ func commentRoutes(api *gin.RouterGroup, commentHandler *handlers.CommentHandler
 }
 
 func postLikeRoutes(api *gin.RouterGroup, postLikeHandler *handlers.PostLikeHandler, cfg *config.Config) {
-    public := api.Group("/logs")
-    private := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	public := api.Group("/logs")
+	private := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 
-    public.GET("/:id/likes", postLikeHandler.GetLikesHandler)
-    private.POST("/:id/likes", postLikeHandler.LikePostHandler)
+	public.GET("/:id/likes", postLikeHandler.GetLikesHandler)
+	private.POST("/:id/likes", postLikeHandler.LikePostHandler)
+}
+
+func reportRoutes(api *gin.RouterGroup, reportHandler *handlers.ReportHandler, cfg *config.Config) {
+	private := api.Group("/reports").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	private.POST("/", reportHandler.CreateReportHandler)
 }
