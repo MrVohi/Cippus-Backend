@@ -66,6 +66,15 @@ func main() {
 	}
 	minioHandler := handlers.NewMinioHandler(minioService, postService)
 
+	commentService := services.NewCommentService(db)
+	commentHandler := handlers.NewCommentHandler(commentService)
+
+	postLikeService := services.NewPostLikeService(db)
+	postLikeHandler := handlers.NewPostLikeHandler(postLikeService)
+
+	reportService := services.NewReportService(db)
+	reportHandler := handlers.NewReportHandler(reportService)
+  
 	rabbit, err := services.NewRabbitPublisher(cfg.RabbitmqURL)
 	if err != nil {
 		log.Fatal("Error while connecting to RabbitMQ: ", err)
@@ -86,7 +95,7 @@ func main() {
 	searchService := services.NewSearchService(db, embeddingService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, &cfg)
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, reportHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

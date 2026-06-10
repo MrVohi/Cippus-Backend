@@ -19,6 +19,8 @@ func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 		auth.POST("/refresh", authHandler.RefreshHandler)
 		auth.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
 		auth.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
+		auth.GET("/google/login", authHandler.GoogleLoginHandler)
+		auth.GET("/google/callback", authHandler.GoogleCallbackHandler)
 	}
 }
 
@@ -108,7 +110,7 @@ func searchRoutes(api *gin.RouterGroup, searchHandler *handlers.SearchHandler, c
 	search.GET("/logs/:id/similar", searchHandler.GetSimilarHandler)
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, searchHandler *handlers.SearchHandler, cfg *config.Config) {
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, searchHandler *handlers.SearchHandler, commentHandler *handlers.CommentHandler, postLikeHandler *handlers.PostLikeHandler, reportHandler *handlers.ReportHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -126,9 +128,34 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)
 	projectRoutes(api, projectHandler, cfg)
+	commentRoutes(api, commentHandler, cfg)
+	postLikeRoutes(api, postLikeHandler, cfg)
+	reportRoutes(api, reportHandler, cfg)
 	messagesRoutes(api, messageHandler, cfg)
 	pushRoutes(api, pushHandler, cfg)
 	notificationRoutes(api, notificationHandler, cfg)
 	searchRoutes(api, searchHandler, cfg)
 
+}
+
+func commentRoutes(api *gin.RouterGroup, commentHandler *handlers.CommentHandler, cfg *config.Config) {
+	publicComments := api.Group("/logs")
+	privateComments := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+
+	publicComments.GET("/:id/comments", commentHandler.GetCommentsByPostIDHandler)
+	privateComments.POST("/:id/comments", commentHandler.CreateCommentHandler)
+	privateComments.DELETE("/:id/comments/:commentId", commentHandler.DeleteCommentHandler)
+}
+
+func postLikeRoutes(api *gin.RouterGroup, postLikeHandler *handlers.PostLikeHandler, cfg *config.Config) {
+	public := api.Group("/logs")
+	private := api.Group("/logs").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+
+	public.GET("/:id/likes", postLikeHandler.GetLikesHandler)
+	private.POST("/:id/likes", postLikeHandler.LikePostHandler)
+}
+
+func reportRoutes(api *gin.RouterGroup, reportHandler *handlers.ReportHandler, cfg *config.Config) {
+	private := api.Group("/reports").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	private.POST("/", reportHandler.CreateReportHandler)
 }

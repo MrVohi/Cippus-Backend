@@ -1,14 +1,28 @@
 package handlers
 
 import (
-	"net/http"
+	"cippus-backend/internal/services"
+	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"strings"
 
-	"cippus-backend/internal/services"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
 	"github.com/gin-gonic/gin"
 )
+
+var googleOauthConfig = &oauth2.Config{
+	RedirectURL:  "http://localhost:8080/api/v1/auth/google/callback",
+	ClientID:     "867066574781-eijfcja8qq7o6suh7v6hqqpinrbrh0dv.apps.googleusercontent.com",
+	ClientSecret: "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",
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Endpoint:     google.Endpoint,
+}
+
+const oauthStateString = "random_state_string"
 
 func (h *AuthHandler) RegisterHandler(ctx *gin.Context) {
 	req := RegisterRequest{}
@@ -110,6 +124,61 @@ func (h *AuthHandler) RefreshHandler(ctx *gin.Context) {
 		true,
 	)
 	ctx.JSON(200, gin.H{"user": toUserResponse(user), "accessToken": access})
+}
+
+func (h *AuthHandler) GoogleLoginHandler(c *gin.Context) {
+	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (h *AuthHandler) GoogleCallbackHandler(c *gin.Context) {
+	state := c.Query("state")
+	if state != oauthStateString {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "État de sécurité invalide"})
+		return
+	}
+	code := c.Query("code")
+	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Échec de l'échange de token"})
+		return
+	}
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les infos utilisateur"})
+		return
+	}
+	defer response.Body.Close()
+
+	var googleUser struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(&googleUser); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Échec du décodage des infos"})
+		return
+	}
+
+	result, err := h.service.LoginOrCreateWithGoogle(googleUser.Email, googleUser.Name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de vous connecter via Google pour le moment."})
+		return
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"refresh_token",
+		result.RefreshToken,
+		7*24*3600,
+		"/",
+		"",
+		true,
+		true,
+	)
+	frontendRedirectURL := "http://localhost:3000/auth/success?token=" + result.AccessToken
+	c.Redirect(http.StatusTemporaryRedirect, frontendRedirectURL)
 }
 
 func (h *AuthHandler) LogoutHandler(ctx *gin.Context) {
