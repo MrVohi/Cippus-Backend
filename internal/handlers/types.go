@@ -3,6 +3,7 @@ package handlers
 import (
 	"cippus-backend/internal/models"
 	"cippus-backend/internal/services"
+	"cippus-backend/internal/ws"
 	"time"
 )
 
@@ -32,8 +33,14 @@ type AuthHandler struct {
 }
 
 type PatchMeRequest struct {
-	Username *string `json:"username" binding:"omitempty,min=2,max=30"`
-	Bio      *string `json:"bio"      binding:"omitempty,max=500"`
+	Username          *string `json:"username" binding:"omitempty,min=2,max=30"`
+	Bio               *string `json:"bio"      binding:"omitempty,max=500"`
+	NotifReply        *bool   `json:"notif_replies"`
+	NotifFollows      *bool   `json:"notif_follows"`
+	NotifLike         *bool   `json:"notif_likes"`
+	NotifMention      *bool   `json:"notif_mentions"`
+	NotifDM           *bool   `json:"notif_dms"`
+	NotifPostApproved *bool   `json:"notif_post_approved"`
 }
 
 type PostHandler struct {
@@ -122,4 +129,35 @@ func toPostResponse(p models.Post) PostResponse {
 
 type ProjectHandler struct {
 	service *services.ProjectService
+}
+
+type MessageHandler struct {
+	service *services.MessageService
+	Hub     *ws.Hub
+	notif   *services.NotificationService
+}
+
+type PushHandler struct {
+	service     *services.PushService
+	vapidPublic string
+}
+
+type NotificationHandler struct {
+	service *services.NotificationService
+}
+
+type SearchHandler struct {
+	service *services.SearchService
+}
+
+type SearchPostResponse struct {
+	PostResponse
+	Distance float64 `json:"distance"`
+}
+
+func toSearchPostResponse(p services.PostWithDistance) SearchPostResponse {
+	return SearchPostResponse{
+		PostResponse: toPostResponse(p.Post),
+		Distance:     p.Distance,
+	}
 }
