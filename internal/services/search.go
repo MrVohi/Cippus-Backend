@@ -70,7 +70,7 @@ func (s *SearchService) GetSimilar(postID uint, limit int) ([]PostWithDistance, 
 		ID       uint
 		Distance float64
 	}
-	result = s.db.Raw("SELECT id, embedding <=> ? AS distance FROM posts WHERE deleted_at IS NULL AND id != ? ORDER BY distance ASC LIMIT ?", post.Embedding, postID, limit).Scan(&rows)
+	result = s.db.Raw("SELECT id, embedding <=> ? AS distance FROM posts WHERE deleted_at IS NULL AND id != ? AND embedding <=> ? < 0.3 ORDER BY distance ASC LIMIT ?", post.Embedding, postID, post.Embedding, limit).Scan(&rows)
 	if result.Error != nil {
 		return []PostWithDistance{}, result.Error
 	}
