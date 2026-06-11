@@ -16,8 +16,8 @@ import (
 
 var googleOauthConfig = &oauth2.Config{
 	RedirectURL:  "http://localhost:8080/api/v1/auth/google/callback",
-	ClientID:     "TON_CLIENT_ID_DE_GOOGLE_CLOUD",     // Idéalement à lier avec ton cfg.GoogleClientID
-	ClientSecret: "TON_CLIENT_SECRET_DE_GOOGLE_CLOUD", // Idéalement à lier avec ton cfg.GoogleClientSecret
+	ClientID:     "CLIENT_ID_DE_GOOGLE_CLOUD",
+	ClientSecret: "CLIENT_SECRET_DE_GOOGLE_CLOUD",
 	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
 	Endpoint:     google.Endpoint,
 }
