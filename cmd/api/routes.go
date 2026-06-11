@@ -19,6 +19,8 @@ func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 		auth.POST("/refresh", authHandler.RefreshHandler)
 		auth.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
 		auth.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
+		auth.GET("/google", authHandler.GoogleLoginHandler)
+		auth.GET("/google/callback", authHandler.GoogleCallbackHandler)
 	}
 }
 

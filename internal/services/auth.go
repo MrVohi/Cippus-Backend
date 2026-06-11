@@ -82,6 +82,39 @@ func GenerateUniqueUsername(db *gorm.DB, base string) string {
 	}
 }
 
+func (s *AuthService) LoginOrCreateWithGoogle(email string, username string) (AuthResult, error) {
+	row := models.User{}
+	result := s.db.Where("email = ?", email).First(&row)
+
+	if result.Error == gorm.ErrRecordNotFound {
+		row = models.User{
+			Email:    email,
+			Username: username,
+			Role:     models.RoleUser,
+		}
+		if err := s.db.Create(&row).Error; err != nil {
+			return AuthResult{}, fmt.Errorf("cannot create user")
+		}
+	} else if result.Error != nil {
+		return AuthResult{}, fmt.Errorf("error with db")
+	}
+
+	accessToken, err := GenerateAccessToken(row.ID, row.Role, s.secret)
+	if err != nil {
+		return AuthResult{}, fmt.Errorf("cannot generate access token")
+	}
+	refreshToken, tokenHash, err := GenerateRefreshToken(row.ID, s.secret)
+	if err != nil {
+		return AuthResult{}, fmt.Errorf("cannot generate refresh token")
+	}
+	err = StoreRefreshToken(s.db, row.ID, tokenHash)
+	if err != nil {
+		return AuthResult{}, fmt.Errorf("cannot save refresh token")
+	}
+
+	return AuthResult{accessToken, refreshToken, row}, nil
+}
+
 func (s *AuthService) Login(email string, password string) (AuthResult, error) {
 	row := models.User{}
 	result := s.db.Where("email = ?", email).First(&row)
