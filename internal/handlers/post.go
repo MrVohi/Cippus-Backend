@@ -113,10 +113,21 @@ func (h *PostHandler) CreatePostHandler(ctx *gin.Context) {
 		categoryIDs = append(categoryIDs, uint(id))
 	}
 
+	stuckStr := ctx.PostForm("stuck")
+	var stuckVal *bool
+	if stuckStr == "true" {
+		t := true
+		stuckVal = &t
+	} else if stuckStr == "false" {
+		f := false
+		stuckVal = &f
+	}
+
 	req := services.PostInput{
 		Title:       title,
 		Content:     content,
 		CategoryIDs: categoryIDs,
+		Stuck:       stuckVal,
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))
@@ -156,10 +167,21 @@ func (h *PostHandler) UpdatePostHandler(ctx *gin.Context) {
 		categoryIDs = append(categoryIDs, uint(catID))
 	}
 
+	stuckStr := ctx.PostForm("stuck")
+	var stuckVal *bool
+	if stuckStr == "true" {
+		t := true
+		stuckVal = &t
+	} else if stuckStr == "false" {
+		f := false
+		stuckVal = &f
+	}
+
 	req := services.PostInput{
 		Title:       title,
 		Content:     content,
 		CategoryIDs: categoryIDs,
+		Stuck:       stuckVal,
 	}
 
 	userID := uint(ctx.GetFloat64("userID"))

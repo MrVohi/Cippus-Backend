@@ -65,7 +65,7 @@ func (s *PostService) CreatePost(authorID uint, input PostInput) (models.Post, e
 		post.Stuck = *input.Stuck
 	}
 
-	result := s.db.Create(&post)
+	result := s.db.Omit("Embedding").Create(&post)
 	if result.Error != nil {
 		return models.Post{}, fmt.Errorf("cannot register new post")
 	}
@@ -121,7 +121,7 @@ func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input 
 
 	post.ModerationStatus = models.ModerationPending
 
-	result = s.db.Save(&post)
+	result = s.db.Omit("Embedding").Save(&post)
 	if result.Error != nil {
 		return models.Post{}, fmt.Errorf("cannot update post")
 	}
@@ -143,10 +143,6 @@ func (s *PostService) UpdatePost(id uint, authorID uint, userRole string, input 
 	embedding, err := s.es.GenerateEmbedding(post.Title + " " + post.Content)
 	if err == nil {
 		s.db.Model(&post).Update("embedding", pgvector.NewVector(embedding))
-	}
-	stuck, err := s.es.DetectStuck(post.Title + " " + post.Content)
-	if err == nil && stuck {
-		s.db.Model(&post).Update("stuck", true)
 	}
 
 	return post, nil
