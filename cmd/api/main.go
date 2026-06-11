@@ -17,6 +17,7 @@ import (
 	"cippus-backend/internal/handlers"
 	"cippus-backend/internal/middleware"
 	"cippus-backend/internal/services"
+	"cippus-backend/internal/ws"
 )
 
 func main() {
@@ -49,7 +50,8 @@ func main() {
 	userService := services.NewUserService(db)
 	userHandler := handlers.NewUserHandler(userService)
 
-	postService := services.NewPostService(db)
+	embeddingService := services.NewEmbeddingService(cfg)
+	postService := services.NewPostService(db, embeddingService)
 	postHandler := handlers.NewPostHandler(postService)
 
 	categoryService := services.NewCategoryService(db)
@@ -64,7 +66,27 @@ func main() {
 	}
 	minioHandler := handlers.NewMinioHandler(minioService, postService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, &cfg)
+	rabbit, err := services.NewRabbitPublisher(cfg.RabbitmqURL)
+	if err != nil {
+		log.Fatal("Error while connecting to RabbitMQ: ", err)
+	}
+	defer rabbit.Close()
+
+	notificationService := services.NewNotificationService(db, rabbit)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
+
+	messageService := services.NewMessageService(db)
+	hub := ws.NewHub()
+	go hub.Run()
+	messageHandler := handlers.NewMessageHandler(messageService, hub, notificationService)
+
+	pushService := services.NewPushService(db, cfg.VapidPublicKey, cfg.VapidPrivateKey, cfg.VapidSubject)
+	pushHandler := handlers.NewPushHandler(pushService, cfg.VapidPublicKey)
+
+	searchService := services.NewSearchService(db, embeddingService)
+	searchHandler := handlers.NewSearchHandler(searchService)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,
