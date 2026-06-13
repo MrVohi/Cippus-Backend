@@ -86,7 +86,16 @@ func main() {
 	searchService := services.NewSearchService(db, embeddingService)
 	searchHandler := handlers.NewSearchHandler(searchService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, &cfg)
+	commentService := services.NewCommentService(db)
+	commentHandler := handlers.NewCommentHandler(commentService)
+
+	postLikeService := services.NewPostLikeService(db)
+	postLikeHandler := handlers.NewPostLikeHandler(postLikeService)
+
+	commentLikeService := services.NewCommentLikeService(db)
+	commentLikeHandler := handlers.NewCommentLikeHandler(commentLikeService)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

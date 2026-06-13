@@ -100,6 +100,35 @@ type PostResponse struct {
 	UpdatedAt        time.Time          `json:"updated_at"`
 }
 
+type CommentResponse struct {
+	ID        uint            `json:"id"`
+	PostID    uint            `json:"post_id"`
+	UserID    uint            `json:"user_id"`
+	Author    *AuthorResponse `json:"author,omitempty"`
+	Content   string          `json:"content"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+func toCommentResponse(c models.Comment) CommentResponse {
+	resp := CommentResponse{
+		ID:        c.ID,
+		PostID:    c.PostID,
+		UserID:    c.UserID,
+		Content:   c.Content,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+	}
+	if c.Author.ID != 0 {
+		resp.Author = &AuthorResponse{
+			UserID:    c.Author.ID,
+			Username:  c.Author.Username,
+			AvatarURL: c.Author.AvatarURL,
+		}
+	}
+	return resp
+}
+
 func toPostResponse(p models.Post) PostResponse {
 	cats := make([]CategoryResponse, len(p.Categories))
 	for i, c := range p.Categories {
