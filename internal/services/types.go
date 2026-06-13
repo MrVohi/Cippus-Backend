@@ -101,3 +101,7 @@ type SearchService struct {
 	db *gorm.DB
 	es EmbeddingService
 }
+
+type CommentService struct {
+	db *gorm.DB
+}

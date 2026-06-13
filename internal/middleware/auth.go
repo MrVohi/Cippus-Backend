@@ -7,6 +7,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func OptionalAuthMiddleware(secret string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		header := ctx.GetHeader("Authorization")
+		if header != "" && strings.HasPrefix(header, "Bearer ") {
+			token := strings.TrimPrefix(header, "Bearer ")
+			if claims, err := services.ValidateAccessToken(token, secret); err == nil {
+				ctx.Set("userID", claims["userID"])
+				ctx.Set("userRole", claims["userRole"])
+			}
+		}
+		ctx.Next()
+	}
+}
+
 func AuthMiddleware(secret string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		header := ctx.GetHeader("Authorization")
