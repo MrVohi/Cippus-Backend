@@ -11,14 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
-	auth := api.Group("/auth")
+func authRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, cfg *config.Config) {
+	public := api.Group("/auth")
+	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		auth.POST("/register", middleware.RateLimiter(3), authHandler.RegisterHandler)
-		auth.POST("/login", middleware.RateLimiter(5), authHandler.LoginHandler)
-		auth.POST("/refresh", authHandler.RefreshHandler)
-		auth.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
-		auth.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
+		public.POST("/register", middleware.RateLimiter(3), authHandler.RegisterHandler)
+		public.POST("/login", middleware.RateLimiter(5), authHandler.LoginHandler)
+		public.POST("/refresh", authHandler.RefreshHandler)
+		public.POST("/password-reset/request", middleware.RateLimiter(3), authHandler.PasswordResetRequestHandler)
+		public.POST("/password-reset/confirm", middleware.RateLimiter(5), authHandler.PasswordResetConfirmHandler)
+		private.POST("/auth/logout", authHandler.LogoutHandler)
 	}
 }
 
@@ -74,7 +76,7 @@ func messagesRoutes(api *gin.RouterGroup, messageHandler *handlers.MessageHandle
 		messages.POST("", messageHandler.Send)
 		messages.GET("", messageHandler.GetConversations)
 		messages.GET("/:userID", messageHandler.GetThread)
-		messages.PUT("/:messageID/read", messageHandler.MarkAsRead)	
+		messages.PUT("/:messageID/read", messageHandler.MarkAsRead)
 	}
 }
 
@@ -87,11 +89,15 @@ func pushRoutes(api *gin.RouterGroup, pushHandler *handlers.PushHandler, cfg *co
 	}
 }
 
-func privateRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
-	private := api.Group("/").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+func userRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, cfg *config.Config) {
+	public := api.Group("/users")
+	private := api.Group("/users").Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	{
-		private.POST("/auth/logout", authHandler.LogoutHandler)
-		private.PATCH("/users/me", userHandler.PatchMe)
+		private.PATCH("/me", userHandler.PatchMe)
+		private.PATCH("/me/avatar", userHandler.UploadAvatar)
+		private.DELETE("/me/avatar", userHandler.DeleteAvatar)
+		private.GET("/me", userHandler.GetMe)
+		public.GET("/:userId", userHandler.GetUser)
 	}
 }
 
@@ -149,8 +155,8 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 
 	api := router.Group("/api/v1")
 
-	authRoutes(api, authHandler)
-	privateRoutes(api, authHandler, userHandler, cfg)
+	authRoutes(api, authHandler, cfg)
+	userRoutes(api, authHandler, userHandler, cfg)
 	postRoutes(api, postHandler, cfg)
 	imageRoutes(api, minioHandler, cfg)
 	categoryRoutes(api, categoryHandler, cfg)

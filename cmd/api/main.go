@@ -47,9 +47,6 @@ func main() {
 	authService := services.NewAuthService(db, cfg.JWTSecret, cfg.FrontendURL, cfg.ResendApiKey, cfg.RecaptchaSecret)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	userService := services.NewUserService(db)
-	userHandler := handlers.NewUserHandler(userService)
-
 	embeddingService := services.NewEmbeddingService(cfg)
 	postService := services.NewPostService(db, embeddingService)
 	postHandler := handlers.NewPostHandler(postService)
@@ -94,6 +91,9 @@ func main() {
 
 	commentLikeService := services.NewCommentLikeService(db)
 	commentLikeHandler := handlers.NewCommentLikeHandler(commentLikeService)
+
+	userService := services.NewUserService(db)
+	userHandler := handlers.NewUserHandler(userService, minioService)
 
 	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, &cfg)
 
