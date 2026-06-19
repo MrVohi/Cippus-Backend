@@ -190,3 +190,7 @@ func toSearchPostResponse(p services.PostWithDistance) SearchPostResponse {
 		Distance:     p.Distance,
 	}
 }
+
+type OAuthHandler struct {
+	service *services.OAuthService
+}

@@ -95,7 +95,10 @@ func main() {
 	userService := services.NewUserService(db)
 	userHandler := handlers.NewUserHandler(userService, minioService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, &cfg)
+	oauthService := services.NewOAuthService(cfg, db)
+	oauthHandler := handlers.NewOAuthHandler(oauthService)
+
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, oauthHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

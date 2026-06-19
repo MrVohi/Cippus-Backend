@@ -5,6 +5,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/rabbitmq/amqp091-go"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
@@ -104,4 +105,31 @@ type SearchService struct {
 
 type CommentService struct {
 	db *gorm.DB
+}
+
+type googleProfile struct{
+	Sub string `json:"sub"`
+	Email string `json:"email"`
+	Name string `json:"name"`
+	Picture string `json:"picture"`
+}
+
+type githubProfile struct{
+	ID int `json:"id"`
+	Login string `json:"login"`
+	AvatarURL string `json:"avatar_url"`
+	Email string `json:"email"`
+}
+
+type githubEmail struct{
+	Email string `json:"email"`
+	Primary bool `json:"primary"`
+	Verified bool `json:"verified"`
+}
+type OAuthService struct {
+	GoogleConfig *oauth2.Config
+	GithubConfig *oauth2.Config
+	db           *gorm.DB
+	secret       string
+	FrontendURL  string
 }
