@@ -101,6 +101,54 @@ func (s EmbeddingService) DetectStuck(text string) (bool, error) {
 	return result.Result == "yes", nil
 }
 
+func (s EmbeddingService) ImproveText(text string) (string, error) {
+	prompt := "You are a writing assistant. Improve the clarity, grammar, and readability of the text below. Keep the author's voice and intent. Do NOT add any commentary, preamble, or explanation. Do NOT say 'Here is the improved version' or anything similar. Return ONLY the improved text, nothing else. <text>" + text + "</text>"
+
+	type body struct {
+		Model  string `json:"model"`
+		Prompt string `json:"prompt"`
+		Stream bool   `json:"stream"`
+	}
+	respBody := body{
+		Model:  s.model,
+		Prompt: prompt,
+		Stream: false,
+	}
+
+	bodyBites, err := json.Marshal(respBody)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := http.Post(
+		s.url+"/api/generate",
+		"application/json",
+		bytes.NewReader(bodyBites),
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("unexpected status")
+	}
+
+	type response struct {
+		Result string `json:"response"`
+	}
+
+	result := response{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(result.Result), nil
+}
+
 func NewEmbeddingService(cfg config.Config) *EmbeddingService {
 	return &EmbeddingService{url: cfg.OllamaBaseURL, embedModel: cfg.OllamaEmbedModel, model: cfg.OllamaModel}
 }
