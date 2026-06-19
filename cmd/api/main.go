@@ -48,6 +48,8 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 
 	embeddingService := services.NewEmbeddingService(cfg)
+	aiHandler := handlers.NewAIHandler(embeddingService)
+
 	postService := services.NewPostService(db, embeddingService)
 	postHandler := handlers.NewPostHandler(postService)
 
@@ -98,7 +100,7 @@ func main() {
 	oauthService := services.NewOAuthService(cfg, db)
 	oauthHandler := handlers.NewOAuthHandler(oauthService)
 
-	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, oauthHandler, &cfg)
+	setupRoutes(router, authHandler, userHandler, postHandler, minioHandler, categoryHandler, projectHandler, messageHandler, pushHandler, notificationHandler, searchHandler, commentHandler, postLikeHandler, commentLikeHandler, oauthHandler, aiHandler, &cfg)
 
 	srv := &http.Server{
 		Addr:              cfg.Port,

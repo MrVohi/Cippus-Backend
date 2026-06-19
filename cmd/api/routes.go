@@ -145,7 +145,7 @@ func commentLikeRoutes(api *gin.RouterGroup, commentLikeHandler *handlers.Commen
 
 func oauthRoutes(api *gin.RouterGroup, oauthHandler *handlers.OAuthHandler, cfg *config.Config) {
 	public := api.Group("/auth")
-	
+
 	{
 		public.GET("/google", oauthHandler.HandleGoogleInit)
 		public.GET("/github", oauthHandler.HandleGithubInit)
@@ -154,7 +154,15 @@ func oauthRoutes(api *gin.RouterGroup, oauthHandler *handlers.OAuthHandler, cfg 
 	}
 }
 
-func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, searchHandler *handlers.SearchHandler, commentHandler *handlers.CommentHandler, postLikeHandler *handlers.PostLikeHandler, commentLikeHandler *handlers.CommentLikeHandler, oauthHandler *handlers.OAuthHandler, cfg *config.Config) {
+func aiRoutes(api *gin.RouterGroup, aiHandler *handlers.AIHandler, cfg *config.Config) {
+	private := api.Group("/ai").Use(middleware.AuthMiddleware(cfg.JWTSecret))
+
+	{
+		private.POST("/improve", middleware.RateLimiter(5), aiHandler.ImproveHandler)
+	}
+}
+
+func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHandler *handlers.UserHandler, postHandler *handlers.PostHandler, minioHandler *handlers.MinioHandler, categoryHandler *handlers.CategoryHandler, projectHandler *handlers.ProjectHandler, messageHandler *handlers.MessageHandler, pushHandler *handlers.PushHandler, notificationHandler *handlers.NotificationHandler, searchHandler *handlers.SearchHandler, commentHandler *handlers.CommentHandler, postLikeHandler *handlers.PostLikeHandler, commentLikeHandler *handlers.CommentLikeHandler, oauthHandler *handlers.OAuthHandler, aiHandler *handlers.AIHandler, cfg *config.Config) {
 	corsCfg := cors.DefaultConfig()
 	corsCfg.AllowOrigins = []string{cfg.FrontendURL}
 	corsCfg.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -180,4 +188,5 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	postLikeRoutes(api, postLikeHandler, cfg)
 	commentLikeRoutes(api, commentLikeHandler, cfg)
 	oauthRoutes(api, oauthHandler, cfg)
+	aiRoutes(api, aiHandler, cfg)
 }
