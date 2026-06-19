@@ -121,7 +121,7 @@ func (h *OAuthHandler) HandleGithubCallback(ctx *gin.Context) {
 	)
 
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "cannot fetch github profile"})
+		ctx.JSON(500, gin.H{"error": "cannot create user from github"})
 		return
 	}
 

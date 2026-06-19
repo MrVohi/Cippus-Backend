@@ -179,4 +179,5 @@ func setupRoutes(router *gin.Engine, authHandler *handlers.AuthHandler, userHand
 	commentsRoutes(api, commentHandler, cfg)
 	postLikeRoutes(api, postLikeHandler, cfg)
 	commentLikeRoutes(api, commentLikeHandler, cfg)
+	oauthRoutes(api, oauthHandler, cfg)
 }

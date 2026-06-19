@@ -15,6 +15,18 @@ import (
 	"gorm.io/gorm"
 )
 
+func uniqueUsername(db *gorm.DB, base string) string {
+	candidate := base
+	for i := 2; ; i++ {
+		var count int64
+		db.Model(&models.User{}).Where("username = ?", candidate).Count(&count)
+		if count == 0 {
+			return candidate
+		}
+		candidate = fmt.Sprintf("%s_%d", base, i)
+	}
+}
+
 func NewOAuthService(cfg config.Config, db *gorm.DB) *OAuthService {
 	googleConf := &oauth2.Config{
 		ClientID:     cfg.GoogleClientID,
@@ -142,7 +154,7 @@ func (s *OAuthService) FindOrCreateUserFromOAuth(provider models.OAuthProviderNa
 
 	newUser := models.User{
 		Email:     email,
-		Username:  username,
+		Username:  uniqueUsername(s.db, username),
 		AvatarURL: avatarURL,
 		Role:      models.RoleUser,
 	}
