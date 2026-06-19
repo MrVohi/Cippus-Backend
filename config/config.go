@@ -16,8 +16,10 @@ type Config struct{
 	JWTSecret string `env:"JWT_SECRET,required"`
 	GithubClientID string `env:"GITHUB_CLIENT_ID,required"`
 	GithubClientSecret string `env:"GITHUB_CLIENT_SECRET,required"`
+	GithubRedirectURL string `env:"GITHUB_REDIRECT_URL,required"`
 	GoogleClientID string `env:"GOOGLE_CLIENT_ID,required"`
 	GoogleClientSecret string `env:"GOOGLE_CLIENT_SECRET,required"`
+	GoogleRedirectURL string `env:"GOOGLE_REDIRECT_URL,required"`
 
 	// Database
 	DatabaseURL string `env:"DATABASE_URL,required"`
